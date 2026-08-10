@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 
 function SignIn({ onBack, onLogin }) {
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-
     const [error, setError] = useState("");
     const [showPassword, setShowPassword] = useState(false);
 
     const handleSubmit = (event) => {
+
         event.preventDefault();
 
         setError("");
@@ -34,13 +35,31 @@ function SignIn({ onBack, onLogin }) {
             return;
         }
 
-        const loggedUser = {
+        const user = {
             email: cleanEmail
         };
 
         if (onLogin) {
-            onLogin(loggedUser);
+            onLogin(user);
         }
+    };
+
+    const handleCreateAccount = () => {
+
+        setError("");
+
+        alert(
+            "Account registration will be available soon."
+        );
+    };
+
+    const handleGoogleLogin = () => {
+
+        setError("");
+
+        alert(
+            "Google login will be available soon."
+        );
     };
 
     return (
@@ -73,9 +92,10 @@ function SignIn({ onBack, onLogin }) {
                             id="email"
                             type="email"
                             value={email}
-                            onChange={(event) =>
-                                setEmail(event.target.value)
-                            }
+                            onChange={(event) => {
+                                setEmail(event.target.value);
+                                setError("");
+                            }}
                             placeholder="Enter your email"
                             autoComplete="email"
                         />
@@ -98,9 +118,10 @@ function SignIn({ onBack, onLogin }) {
                                         : "password"
                                 }
                                 value={password}
-                                onChange={(event) =>
-                                    setPassword(event.target.value)
-                                }
+                                onChange={(event) => {
+                                    setPassword(event.target.value);
+                                    setError("");
+                                }}
                                 placeholder="Enter your password"
                                 autoComplete="current-password"
                             />
@@ -109,10 +130,14 @@ function SignIn({ onBack, onLogin }) {
                                 type="button"
                                 className="show-password"
                                 onClick={() =>
-                                    setShowPassword(!showPassword)
+                                    setShowPassword(
+                                        !showPassword
+                                    )
                                 }
                             >
-                                {showPassword ? "Hide" : "Show"}
+                                {showPassword
+                                    ? "Hide"
+                                    : "Show"}
                             </button>
 
                         </div>
@@ -141,30 +166,27 @@ function SignIn({ onBack, onLogin }) {
                 <button
                     type="button"
                     className="google-login"
-                    onClick={() =>
-                        setError(
-                            "Google login will be connected later."
-                        )
-                    }
+                    onClick={handleGoogleLogin}
                 >
-                    <span>G</span>
+                    <span className="google-icon">
+                        G
+                    </span>
+
                     Continue with Google
                 </button>
 
                 <p className="signup-text">
+
                     Don't have an account?
 
                     <button
                         type="button"
                         className="signup-button"
-                        onClick={() =>
-                            setError(
-                                "Registration will be added later."
-                            )
-                        }
+                        onClick={handleCreateAccount}
                     >
                         Create account
                     </button>
+
                 </p>
 
                 <button
