@@ -21,7 +21,7 @@ public class ComicPage {
     @Column(nullable = false)
     private Integer pageNumber;
 
-    @Column(nullable = false, length = 2000)
+    @Column(nullable = false, length = 1000)
     private String imageUrl;
 
     public ComicPage() {
