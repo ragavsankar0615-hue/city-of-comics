@@ -1,27 +1,56 @@
 import React, { useState } from "react";
-import "./SignIn.css";
+import "./Register.css";
 
-function SignIn({
+function Register({
     onBack,
-    onRegister,
-    onLogin
+    onSignIn,
+    onRegister
 }) {
+    const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+    const [confirmPassword, setConfirmPassword] =
+        useState("");
 
-    const handleLogin = async (event) => {
+    const [showPassword, setShowPassword] =
+        useState(false);
+
+    const [loading, setLoading] =
+        useState(false);
+
+    const [error, setError] =
+        useState("");
+
+    const handleRegister = async (event) => {
         event.preventDefault();
 
         setError("");
 
+        const cleanName = name.trim();
         const cleanEmail = email.trim();
 
-        if (!cleanEmail || !password) {
+        if (
+            !cleanName ||
+            !cleanEmail ||
+            !password ||
+            !confirmPassword
+        ) {
             setError(
-                "Please enter your email and password."
+                "Please fill in all fields."
+            );
+            return;
+        }
+
+        if (password.length < 6) {
+            setError(
+                "Password must contain at least 6 characters."
+            );
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setError(
+                "Passwords do not match."
             );
             return;
         }
@@ -30,13 +59,14 @@ function SignIn({
 
         try {
             const response = await fetch(
-                "http://localhost:8080/api/auth/login",
+                "http://localhost:8080/api/auth/register",
                 {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
+                        name: cleanName,
                         email: cleanEmail,
                         password
                     })
@@ -49,11 +79,12 @@ function SignIn({
             if (!response.ok) {
                 throw new Error(
                     message ||
-                    "Invalid email or password."
+                    "Registration failed."
                 );
             }
 
-            onLogin({
+            onRegister({
+                name: cleanName,
                 email: cleanEmail
             });
 
@@ -67,7 +98,7 @@ function SignIn({
                 )
             ) {
                 setError(
-                    "Unable to connect to the server. Please start the backend."
+                    "Unable to connect to the backend."
                 );
             } else {
                 setError(error.message);
@@ -78,36 +109,52 @@ function SignIn({
     };
 
     return (
-        <main className="auth-page">
+        <main className="register-page">
 
-            <section className="auth-card">
+            <section className="register-card">
 
-                <div className="auth-logo">
+                <div className="register-logo">
                     <span></span>
                     <span></span>
                     <span></span>
                 </div>
 
-                <h1>Welcome Back</h1>
+                <h1>Create Account</h1>
 
-                <p className="auth-subtitle">
-                    Sign in to continue reading your comics.
+                <p className="register-subtitle">
+                    Join City of Comics and start reading.
                 </p>
 
                 {error && (
-                    <div className="auth-error">
+                    <div className="register-error">
                         ⚠️
                         <span>{error}</span>
                     </div>
                 )}
 
-                <form onSubmit={handleLogin}>
+                <form onSubmit={handleRegister}>
 
-                    <div className="form-group">
+                    <div className="register-group">
 
-                        <label>
-                            Email address
-                        </label>
+                        <label>Full name</label>
+
+                        <input
+                            type="text"
+                            placeholder="Your name"
+                            value={name}
+                            onChange={(e) =>
+                                setName(
+                                    e.target.value
+                                )
+                            }
+                            disabled={loading}
+                        />
+
+                    </div>
+
+                    <div className="register-group">
+
+                        <label>Email address</label>
 
                         <input
                             type="email"
@@ -118,34 +165,16 @@ function SignIn({
                                     e.target.value
                                 )
                             }
-                            autoComplete="email"
                             disabled={loading}
                         />
 
                     </div>
 
-                    <div className="form-group">
+                    <div className="register-group">
 
-                        <div className="password-heading">
+                        <label>Password</label>
 
-                            <label>
-                                Password
-                            </label>
-
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setError(
-                                        "Password recovery is not available yet."
-                                    )
-                                }
-                            >
-                                Forgot password?
-                            </button>
-
-                        </div>
-
-                        <div className="password-input">
+                        <div className="register-password">
 
                             <input
                                 type={
@@ -153,14 +182,13 @@ function SignIn({
                                         ? "text"
                                         : "password"
                                 }
-                                placeholder="Enter your password"
+                                placeholder="Create a password"
                                 value={password}
                                 onChange={(e) =>
                                     setPassword(
                                         e.target.value
                                     )
                                 }
-                                autoComplete="current-password"
                                 disabled={loading}
                             />
 
@@ -181,55 +209,54 @@ function SignIn({
 
                     </div>
 
+                    <div className="register-group">
+
+                        <label>
+                            Confirm password
+                        </label>
+
+                        <input
+                            type="password"
+                            placeholder="Confirm your password"
+                            value={confirmPassword}
+                            onChange={(e) =>
+                                setConfirmPassword(
+                                    e.target.value
+                                )
+                            }
+                            disabled={loading}
+                        />
+
+                    </div>
+
                     <button
+                        className="register-submit"
                         type="submit"
-                        className="primary-auth-button"
                         disabled={loading}
                     >
                         {loading
-                            ? "SIGNING IN..."
-                            : "SIGN IN →"}
+                            ? "CREATING ACCOUNT..."
+                            : "CREATE ACCOUNT →"}
                     </button>
 
                 </form>
 
-                <div className="auth-divider">
-                    <span></span>
-                    <small>OR</small>
-                    <span></span>
-                </div>
-
-                <button
-                    className="google-auth-button"
-                    type="button"
-                    onClick={() =>
-                        setError(
-                            "Google sign in will be available soon."
-                        )
-                    }
-                >
-                    <strong>G</strong>
-                    Continue with Google
-                </button>
-
-                <div className="auth-switch">
+                <div className="register-login">
 
                     <span>
-                        Don't have an account?
+                        Already have an account?
                     </span>
 
                     <button
-                        type="button"
-                        onClick={onRegister}
+                        onClick={onSignIn}
                     >
-                        Create account
+                        Sign in
                     </button>
 
                 </div>
 
                 <button
-                    className="back-auth-button"
-                    type="button"
+                    className="register-back"
                     onClick={onBack}
                 >
                     ← Back to Comics
@@ -241,4 +268,4 @@ function SignIn({
     );
 }
 
-export default SignIn;
+export default Register;

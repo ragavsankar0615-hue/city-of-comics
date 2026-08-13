@@ -8,12 +8,12 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.comic.comicreader.model.Comic;
+import com.comic.comicreader.model.ComicPage;
 import com.comic.comicreader.repository.ComicPageRepository;
 import com.comic.comicreader.repository.ComicRepository;
 
@@ -23,76 +23,93 @@ import com.comic.comicreader.repository.ComicRepository;
 public class ComicController {
 
     private final ComicRepository comicRepository;
+
     private final ComicPageRepository comicPageRepository;
 
     public ComicController(
             ComicRepository comicRepository,
-            ComicPageRepository comicPageRepository) {
-
+            ComicPageRepository comicPageRepository
+    ) {
         this.comicRepository = comicRepository;
         this.comicPageRepository = comicPageRepository;
     }
 
+    // Get all comics
     @GetMapping
     public List<Comic> getAllComics() {
+
         return comicRepository.findAll();
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Comic> getComicById(
-            @PathVariable Long id) {
-
-        return comicRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
+    // Add a comic manually
     @PostMapping
-    public Comic createComic(
-            @RequestBody Comic comic) {
+    public ResponseEntity<Comic> createComic(
+            @RequestBody Comic comic
+    ) {
 
-        return comicRepository.save(comic);
+        Comic savedComic =
+                comicRepository.save(comic);
+
+        return ResponseEntity.ok(savedComic);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Comic> updateComic(
-            @PathVariable Long id,
-            @RequestBody Comic comicDetails) {
+    // Get one comic
+    @GetMapping("/{id}")
+    public ResponseEntity<Comic> getComic(
+            @PathVariable Long id
+    ) {
 
-        return comicRepository.findById(id)
-                .map(comic -> {
-
-                    comic.setTitle(comicDetails.getTitle());
-                    comic.setAuthor(comicDetails.getAuthor());
-                    comic.setDescription(
-                            comicDetails.getDescription()
-                    );
-                    comic.setImageUrl(
-                            comicDetails.getImageUrl()
-                    );
-
-                    Comic updatedComic =
-                            comicRepository.save(comic);
-
-                    return ResponseEntity.ok(updatedComic);
-                })
-                .orElse(ResponseEntity.notFound().build());
+        return comicRepository
+                .findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(
+                        ResponseEntity
+                                .notFound()
+                                .build()
+                );
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteComic(
-            @PathVariable Long id) {
+    // Get comic panels/pages
+    @GetMapping("/{id}/pages")
+    public ResponseEntity<List<ComicPage>> getComicPages(
+            @PathVariable Long id
+    ) {
 
         if (!comicRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+
+            return ResponseEntity
+                    .notFound()
+                    .build();
         }
 
+        List<ComicPage> pages =
+                comicPageRepository
+                        .findByComicIdOrderByPageNumberAsc(id);
+
+        return ResponseEntity.ok(pages);
+    }
+
+    // Delete comic
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteComic(
+            @PathVariable Long id
+    ) {
+
+        if (!comicRepository.existsById(id)) {
+
+            return ResponseEntity
+                    .notFound()
+                    .build();
+        }
+
+        // Delete comic pages first
         comicPageRepository.deleteByComicId(id);
 
+        // Delete comic
         comicRepository.deleteById(id);
 
         return ResponseEntity.ok(
-                "Comic and all pages deleted successfully"
+                "Comic deleted successfully"
         );
     }
 }

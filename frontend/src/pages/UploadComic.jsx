@@ -1,415 +1,206 @@
 import React, { useState } from "react";
+import "./UploadComic.css";
 
-const API_URL = "http://localhost:8081";
-
-function UploadComic({ onUploadSuccess }) {
-
+function UploadComic({ onBack, onSuccess }) {
     const [title, setTitle] = useState("");
     const [author, setAuthor] = useState("");
     const [description, setDescription] = useState("");
-    const [coverImage, setCoverImage] = useState("");
-    const [file, setFile] = useState(null);
-
-    const [uploading, setUploading] = useState(false);
+    const [cover, setCover] = useState(null);
+    const [pages, setPages] = useState([]);
+    const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
-    const [error, setError] = useState("");
 
-    const handleFileChange = (event) => {
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-        const selectedFile =
-            event.target.files[0];
+        if (!title || !author) {
+            setMessage("Please enter title and author.");
+            return;
+        }
 
-        setError("");
+        setLoading(true);
         setMessage("");
-
-        if (!selectedFile) {
-            setFile(null);
-            return;
-        }
-
-        if (
-            !selectedFile.name
-                .toLowerCase()
-                .endsWith(".cbz")
-        ) {
-
-            setError(
-                "Please select a .cbz file."
-            );
-
-            setFile(null);
-            return;
-        }
-
-        setFile(selectedFile);
-    };
-
-    const handleSubmit = async (event) => {
-
-        event.preventDefault();
-
-        setError("");
-        setMessage("");
-
-        if (!title.trim()) {
-            setError(
-                "Please enter the comic title."
-            );
-            return;
-        }
-
-        if (!author.trim()) {
-            setError(
-                "Please enter the author name."
-            );
-            return;
-        }
-
-        if (!file) {
-            setError(
-                "Please select a CBZ file."
-            );
-            return;
-        }
-
-        const formData = new FormData();
-
-        formData.append(
-            "title",
-            title.trim()
-        );
-
-        formData.append(
-            "author",
-            author.trim()
-        );
-
-        formData.append(
-            "description",
-            description.trim()
-        );
-
-        formData.append(
-            "coverImage",
-            coverImage.trim()
-        );
-
-        formData.append(
-            "file",
-            file
-        );
 
         try {
+            const formData = new FormData();
 
-            setUploading(true);
+            formData.append("title", title);
+            formData.append("author", author);
+            formData.append("description", description);
+
+            if (cover) {
+                formData.append("cover", cover);
+            }
+
+            pages.forEach((page) => {
+                formData.append("pages", page);
+            });
 
             const response = await fetch(
-                `${API_URL}/api/comics/upload-cbz`,
+                "http://localhost:8080/api/comics/upload",
                 {
                     method: "POST",
                     body: formData
                 }
             );
 
-            const contentType =
-                response.headers.get(
-                    "content-type"
-                );
-
-            let result;
-
-            if (
-                contentType &&
-                contentType.includes(
-                    "application/json"
-                )
-            ) {
-
-                result = await response.json();
-
-            } else {
-
-                result = await response.text();
-
-            }
+            const result = await response.text();
 
             if (!response.ok) {
-
                 throw new Error(
-                    typeof result === "string"
-                        ? result
-                        : result.message ||
-                          "Upload failed."
+                    result || "Comic upload failed."
                 );
             }
 
-            setMessage(
-                "Comic uploaded successfully!"
-            );
+            setMessage("Comic added successfully!");
 
             setTitle("");
             setAuthor("");
             setDescription("");
-            setCoverImage("");
-            setFile(null);
+            setCover(null);
+            setPages([]);
 
-            const fileInput =
-                document.getElementById(
-                    "comic-file"
-                );
-
-            if (fileInput) {
-                fileInput.value = "";
+            if (onSuccess) {
+                onSuccess();
             }
 
-            if (onUploadSuccess) {
-
-                setTimeout(() => {
-                    onUploadSuccess();
-                }, 800);
-            }
-
-        } catch (err) {
-
-            console.error(
-                "Comic upload error:",
-                err
-            );
-
-            setError(
-                err.message ||
-                "Unable to upload comic."
-            );
-
+        } catch (error) {
+            console.error(error);
+            setMessage(error.message);
         } finally {
-
-            setUploading(false);
-
+            setLoading(false);
         }
     };
 
     return (
+        <main className="upload-page">
 
-        <section className="upload-card">
+            <div className="upload-container">
 
-            <div className="upload-card-header">
+                <div className="upload-header">
+                    <span className="upload-label">
+                        CITY OF COMICS
+                    </span>
 
-                <div className="upload-icon">
-                    📚
-                </div>
-
-                <div>
-                    <h2>
-                        Upload Comics
-                    </h2>
+                    <h1>Add New Comic</h1>
 
                     <p>
-                        Add a new comic to City of Comics
+                        Add a comic and its reading panels
+                        to your collection.
                     </p>
                 </div>
 
-            </div>
+                <form
+                    className="upload-form"
+                    onSubmit={handleSubmit}
+                >
 
-            <div className="upload-divider"></div>
-
-            <form
-                className="upload-form"
-                onSubmit={handleSubmit}
-            >
-
-                {/* TITLE */}
-
-                <div className="form-group">
-
-                    <label htmlFor="comic-title">
-                        Comic Title
-                    </label>
-
-                    <input
-                        id="comic-title"
-                        type="text"
-                        value={title}
-                        onChange={(event) =>
-                            setTitle(
-                                event.target.value
-                            )
-                        }
-                        placeholder="Enter comic title"
-                    />
-
-                </div>
-
-                {/* AUTHOR */}
-
-                <div className="form-group">
-
-                    <label htmlFor="comic-author">
-                        Author
-                    </label>
-
-                    <input
-                        id="comic-author"
-                        type="text"
-                        value={author}
-                        onChange={(event) =>
-                            setAuthor(
-                                event.target.value
-                            )
-                        }
-                        placeholder="Enter author name"
-                    />
-
-                </div>
-
-                {/* DESCRIPTION */}
-
-                <div className="form-group">
-
-                    <label htmlFor="comic-description">
-                        Description
-                    </label>
-
-                    <textarea
-                        id="comic-description"
-                        value={description}
-                        onChange={(event) =>
-                            setDescription(
-                                event.target.value
-                            )
-                        }
-                        placeholder="Enter comic description"
-                        rows="5"
-                    />
-
-                </div>
-
-                {/* COVER URL */}
-
-                <div className="form-group">
-
-                    <label htmlFor="cover-image">
-                        Cover Image URL
-                        <span>
-                            Optional
-                        </span>
-                    </label>
-
-                    <input
-                        id="cover-image"
-                        type="text"
-                        value={coverImage}
-                        onChange={(event) =>
-                            setCoverImage(
-                                event.target.value
-                            )
-                        }
-                        placeholder="Optional — first CBZ page is used automatically"
-                    />
-
-                    <small>
-                        Leave this empty to use
-                        the first page of the CBZ
-                        as the cover.
-                    </small>
-
-                </div>
-
-                {/* FILE */}
-
-                <div className="form-group">
-
-                    <label htmlFor="comic-file">
-                        Comic CBZ File
-                    </label>
-
-                    <div className="file-input-wrapper">
+                    <div className="form-group">
+                        <label>Comic Title</label>
 
                         <input
-                            id="comic-file"
+                            type="text"
+                            placeholder="Enter comic title"
+                            value={title}
+                            onChange={(e) =>
+                                setTitle(e.target.value)
+                            }
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>Author</label>
+
+                        <input
+                            type="text"
+                            placeholder="Enter author name"
+                            value={author}
+                            onChange={(e) =>
+                                setAuthor(e.target.value)
+                            }
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>Description</label>
+
+                        <textarea
+                            placeholder="Enter comic description"
+                            value={description}
+                            onChange={(e) =>
+                                setDescription(e.target.value)
+                            }
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>Cover Image</label>
+
+                        <input
                             type="file"
-                            accept=".cbz"
-                            onChange={
-                                handleFileChange
+                            accept="image/*"
+                            onChange={(e) =>
+                                setCover(
+                                    e.target.files[0]
+                                )
+                            }
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>Comic Panels</label>
+
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) =>
+                                setPages(
+                                    Array.from(
+                                        e.target.files
+                                    )
+                                )
                             }
                         />
 
+                        <small>
+                            Select panels in reading order.
+                        </small>
                     </div>
 
-                    {file && (
-
-                        <div className="selected-file">
-                            📦 {file.name}
+                    {message && (
+                        <div className="upload-message">
+                            {message}
                         </div>
-
                     )}
 
-                </div>
+                    <div className="upload-buttons">
 
-                {/* REQUIREMENTS */}
+                        <button
+                            type="button"
+                            className="back-button"
+                            onClick={onBack}
+                        >
+                            ← Back
+                        </button>
 
-                <div className="requirements">
+                        <button
+                            type="submit"
+                            className="upload-button"
+                            disabled={loading}
+                        >
+                            {loading
+                                ? "ADDING COMIC..."
+                                : "ADD COMIC →"}
+                        </button>
 
-                    <h3>
-                        CBZ Requirements
-                    </h3>
-
-                    <ul>
-
-                        <li>
-                            Upload a .cbz file
-                        </li>
-
-                        <li>
-                            Images should be JPG,
-                            JPEG, PNG or WEBP
-                        </li>
-
-                        <li>
-                            First image becomes
-                            the comic cover
-                        </li>
-
-                    </ul>
-
-                </div>
-
-                {/* ERROR */}
-
-                {error && (
-
-                    <div className="upload-error">
-                        ❌ {error}
                     </div>
 
-                )}
+                </form>
 
-                {/* SUCCESS */}
+            </div>
 
-                {message && (
-
-                    <div className="upload-success">
-                        ✓ {message}
-                    </div>
-
-                )}
-
-                {/* BUTTON */}
-
-                <button
-                    type="submit"
-                    className="upload-submit"
-                    disabled={uploading}
-                >
-
-                    {uploading
-                        ? "Uploading..."
-                        : "↑ Upload Comic"}
-
-                </button>
-
-            </form>
-
-        </section>
+        </main>
     );
 }
 

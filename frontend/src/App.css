@@ -1,1483 +1,230 @@
-/* =====================================================
-   CITY OF COMICS
-   MAIN APPLICATION STYLES
-===================================================== */
-
-* {
-    box-sizing: border-box;
-}
-
-html {
-    scroll-behavior: smooth;
-}
-
-body {
-    margin: 0;
-    min-width: 320px;
-
-    background: #0c0b11;
-
-    color: #f5f1f7;
-
-    font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
-}
-
-button,
-input {
-    font-family: inherit;
-}
-
-button {
-    cursor: pointer;
-}
-
-
-/* =====================================================
-   APP
-===================================================== */
-
 .app {
     min-height: 100vh;
-
     background:
         radial-gradient(
-            circle at 50% -10%,
-            #21132f 0%,
-            #0d0c13 42%,
-            #0b0a10 100%
-        );
+            circle at 10% 20%,
+            rgba(112, 35, 255, 0.18),
+            transparent 35%
+        ),
+        radial-gradient(
+            circle at 90% 80%,
+            rgba(190, 30, 255, 0.18),
+            transparent 35%
+        ),
+        #09070d;
 }
 
-
-/* =====================================================
-   HEADER
-===================================================== */
-
-.top-header {
-    position: sticky;
-
-    top: 0;
-
-    z-index: 1000;
-
-    height: 74px;
-
-    border-bottom:
-        1px solid #292530;
-
-    background:
-        rgba(12, 11, 17, 0.96);
-
-    backdrop-filter: blur(15px);
-}
-
-.header-container {
-    width: min(1320px, 94%);
-
-    height: 100%;
-
-    margin: 0 auto;
-
+.main-header {
+    height: 76px;
+    padding: 0 7%;
     display: flex;
-
     align-items: center;
-
-    gap: 28px;
+    justify-content: space-between;
+    border-bottom: 1px solid #29222f;
+    background: rgba(9, 7, 13, 0.96);
 }
 
-
-/* =====================================================
-   LOGO
-===================================================== */
-
-.logo {
-    border: none;
-
-    background: transparent;
-
-    color: white;
-
+.brand {
     display: flex;
-
     align-items: center;
-
-    gap: 10px;
-
-    padding: 0;
-
-    white-space: nowrap;
-}
-
-.logo-icon {
-    font-size: 27px;
-}
-
-.logo-text {
+    gap: 14px;
     font-size: 22px;
-
     font-weight: 800;
-
-    letter-spacing: -0.5px;
 }
 
-
-/* =====================================================
-   SEARCH
-===================================================== */
-
-.search-container {
+.brand-logo,
+.hero-stack {
     position: relative;
-
-    flex: 1;
-
-    max-width: 520px;
-
-    margin-left: 25px;
+    width: 32px;
+    height: 32px;
 }
 
-.search-container input {
-    width: 100%;
-
-    height: 43px;
-
-    padding:
-        0 48px
-        0 17px;
-
-    border:
-        1px solid #39313d;
-
-    border-radius: 6px;
-
-    outline: none;
-
-    background: #17151c;
-
-    color: white;
-
-    font-size: 14px;
-}
-
-.search-container input::placeholder {
-    color: #8c8290;
-}
-
-.search-container input:focus {
-    border-color: #8c35ff;
-
-    box-shadow:
-        0 0 0 2px
-        rgba(140, 53, 255, 0.12);
-}
-
-.search-icon {
+.brand-logo span,
+.hero-stack span {
     position: absolute;
-
-    right: 16px;
-
-    top: 50%;
-
-    transform: translateY(-50%);
-
-    font-size: 17px;
-
-    opacity: 0.75;
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
 }
 
+.brand-logo span:nth-child(1),
+.hero-stack span:nth-child(1) {
+    background: #a6ff38;
+    left: 2px;
+    top: 2px;
+}
 
-/* =====================================================
-   NAVIGATION
-===================================================== */
+.brand-logo span:nth-child(2),
+.hero-stack span:nth-child(2) {
+    background: #19d9ff;
+    left: 7px;
+    top: 7px;
+}
 
-.navigation {
-    margin-left: auto;
+.brand-logo span:nth-child(3),
+.hero-stack span:nth-child(3) {
+    background: #bd35ff;
+    left: 12px;
+    top: 12px;
+}
 
+.header-actions {
     display: flex;
-
     align-items: center;
-
-    gap: 8px;
+    gap: 20px;
 }
 
-.nav-button {
+.read-button,
+.signin-header-button,
+.signout-button {
     border: none;
-
-    background: transparent;
-
-    color: #c8c0ca;
-
-    padding:
-        12px
-        18px;
-
+    padding: 13px 22px;
     border-radius: 9px;
-
-    font-size: 14px;
-
     font-weight: 700;
-
-    transition:
-        0.2s ease;
 }
 
-.nav-button:hover {
+.read-button,
+.signin-header-button {
+    background: linear-gradient(
+        135deg,
+        #8b2cff,
+        #bd2cff
+    );
     color: white;
-
-    background: #211c27;
-}
-
-.nav-button.active {
-    color: white;
-
-    background:
-        linear-gradient(
-            135deg,
-            #8735ed,
-            #9a2fff
-        );
-
-    box-shadow:
-        0 8px 25px
-        rgba(137, 48, 255, 0.25);
-}
-
-.user-menu {
-    display: flex;
-
-    align-items: center;
-
-    gap: 10px;
-}
-
-.user-email {
-    color: #aaa0ad;
-
-    font-size: 12px;
-
-    max-width: 180px;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-
-    white-space: nowrap;
 }
 
 .signout-button {
-    color: #ff9dbb;
+    background: transparent;
+    color: #ff8ab5;
 }
 
+.signout-button:hover {
+    color: white;
+}
 
-/* =====================================================
-   HOME PAGE
-===================================================== */
+.user-email {
+    color: #cfc4d8;
+    font-size: 14px;
+}
 
 .home-page {
-    width: min(1320px, 94%);
-
-    margin: 0 auto;
-
-    padding-bottom: 80px;
-}
-
-
-/* =====================================================
-   HERO
-===================================================== */
-
-.hero-section {
-    text-align: center;
-
-    padding:
-        70px
-        20px
-        55px;
-}
-
-.hero-badge {
-    display: inline-flex;
-
-    align-items: center;
-
-    padding:
-        7px
-        15px;
-
-    border:
-        1px solid #6934a2;
-
-    border-radius: 30px;
-
-    background:
-        rgba(108, 42, 170, 0.14);
-
-    color: #c992ff;
-
-    font-size: 11px;
-
-    font-weight: 800;
-
-    letter-spacing: 0.5px;
-}
-
-.hero-section h1 {
-    margin:
-        18px
-        0
-        8px;
-
-    color: #eee5ff;
-
-    font-family:
-        Georgia,
-        "Times New Roman",
-        serif;
-
-    font-size:
-        clamp(48px, 7vw, 78px);
-
-    line-height: 1;
-
-    text-transform: capitalize;
-}
-
-.hero-section p {
-    margin: 0;
-
-    color: #9d91a8;
-
-    font-size: 16px;
-}
-
-
-/* =====================================================
-   LIBRARY
-===================================================== */
-
-.library-section {
-    width: 100%;
-}
-
-.section-heading {
+    min-height: calc(100vh - 76px);
     display: flex;
-
-    justify-content: space-between;
-
-    align-items: end;
-
-    margin-bottom: 25px;
-
-    border-bottom:
-        1px solid #29242d;
-
-    padding-bottom: 15px;
-}
-
-.section-heading h2 {
-    margin: 0;
-
-    font-family:
-        Georgia,
-        "Times New Roman",
-        serif;
-
-    font-size: 25px;
-}
-
-.section-heading p {
-    margin:
-        5px
-        0
-        0;
-
-    color: #827782;
-
-    font-size: 13px;
-}
-
-.comic-count {
-    color: #9d90a2;
-
-    font-size: 13px;
-}
-
-
-/* =====================================================
-   COMIC GRID
-===================================================== */
-
-.comic-grid {
-    display: grid;
-
-    grid-template-columns:
-        repeat(
-            auto-fill,
-            minmax(230px, 270px)
-        );
-
-    justify-content: start;
-
-    gap: 25px;
-}
-
-
-/* =====================================================
-   COMIC CARD
-===================================================== */
-
-.comic-card {
-    overflow: hidden;
-
-    background: #17151d;
-
-    border:
-        1px solid #332d38;
-
-    border-radius: 12px;
-
-    transition:
-        transform 0.25s ease,
-        border-color 0.25s ease,
-        box-shadow 0.25s ease;
-}
-
-.comic-card:hover {
-    transform:
-        translateY(-7px);
-
-    border-color: #6933a5;
-
-    box-shadow:
-        0 18px 40px
-        rgba(0, 0, 0, 0.4);
-}
-
-
-/* =====================================================
-   COVER
-===================================================== */
-
-.comic-cover {
-    width: 100%;
-
-    aspect-ratio: 2 / 3;
-
-    overflow: hidden;
-
-    background: #0d0b10;
-}
-
-.comic-cover img {
-    width: 100%;
-
-    height: 100%;
-
-    display: block;
-
-    object-fit: cover;
-
-    transition:
-        transform 0.35s ease;
-}
-
-.comic-card:hover
-.comic-cover img {
-    transform: scale(1.03);
-}
-
-.no-cover {
-    width: 100%;
-
-    height: 100%;
-
-    display: flex;
-
     align-items: center;
-
     justify-content: center;
-
-    color: #6d6370;
-
-    font-size: 50px;
 }
 
-
-/* =====================================================
-   COMIC INFO
-===================================================== */
-
-.comic-info {
-    padding: 16px;
-}
-
-.comic-info h3 {
-    margin: 0;
-
-    color: #f5f0f6;
-
-    font-size: 17px;
-
-    line-height: 1.3;
-}
-
-.comic-author {
-    margin:
-        7px
-        0;
-
-    color: #b45dff;
-
-    font-size: 12px;
-
-    font-weight: 700;
-}
-
-.comic-description {
-    height: 40px;
-
-    margin:
-        8px
-        0
-        15px;
-
-    overflow: hidden;
-
-    color: #8f8591;
-
-    font-size: 12px;
-
-    line-height: 1.5;
-}
-
-
-/* =====================================================
-   READ BUTTON
-===================================================== */
-
-.read-button {
-    width: 100%;
-
-    height: 38px;
-
-    border: none;
-
-    border-radius: 7px;
-
-    background:
-        linear-gradient(
-            135deg,
-            #8132e9,
-            #9c31ff
-        );
-
-    color: white;
-
-    font-size: 12px;
-
-    font-weight: 800;
-
-    transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease;
-}
-
-.read-button:hover {
-    transform:
-        translateY(-1px);
-
-    box-shadow:
-        0 8px 20px
-        rgba(141, 47, 255, 0.25);
-}
-
-
-/* =====================================================
-   STATUS
-===================================================== */
-
-.status-message {
-    min-height: 250px;
-
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: center;
-
-    justify-content: center;
-
-    color: #938997;
-}
-
-.loading-spinner {
-    width: 38px;
-
-    height: 38px;
-
-    border:
-        3px solid #352e3a;
-
-    border-top-color: #9639ff;
-
-    border-radius: 50%;
-
-    animation:
-        spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-
-/* =====================================================
-   ERROR
-===================================================== */
-
-.error-box {
-    max-width: 600px;
-
-    margin: 50px auto;
-
-    padding: 35px;
-
+.hero {
     text-align: center;
-
-    background: #1a1319;
-
-    border:
-        1px solid #512839;
-
-    border-radius: 12px;
+    max-width: 800px;
+    padding: 60px 20px;
 }
 
-.error-icon {
-    font-size: 40px;
-}
-
-.error-box h3 {
-    margin:
-        12px
-        0
-        8px;
-}
-
-.error-box p {
-    color: #a095a1;
-
-    font-size: 14px;
-}
-
-.error-help {
-    font-size: 12px !important;
-
-    color: #756b77 !important;
-}
-
-.retry-button {
-    margin-top: 10px;
-
-    padding:
-        10px
-        20px;
-
-    border: none;
-
-    border-radius: 6px;
-
-    background: #8935ed;
-
-    color: white;
-
-    font-weight: bold;
-}
-
-
-/* =====================================================
-   EMPTY
-===================================================== */
-
-.empty-library,
-.reader-empty {
-    text-align: center;
-
-    padding: 80px 20px;
-
-    color: #8c828e;
-}
-
-.empty-library > div,
-.empty-icon {
-    font-size: 50px;
-
-    margin-bottom: 15px;
-}
-
-.empty-library h3,
-.reader-empty h2 {
-    color: #ded6e0;
-}
-
-
-/* =====================================================
-   SIGN IN PAGE
-===================================================== */
-
-.signin-page {
-    min-height:
-        calc(100vh - 74px);
-
+.hero-logo {
     display: flex;
-
-    align-items: center;
-
     justify-content: center;
-
-    padding:
-        60px
-        20px;
-
-    background:
-        radial-gradient(
-            circle at 50% 0%,
-            #27152f 0%,
-            #110d15 48%,
-            #0c0b11 100%
-        );
+    margin-bottom: 30px;
 }
 
-.signin-card {
-    width: 440px;
-
-    max-width: 100%;
-
-    padding: 42px;
-
-    border:
-        1px solid #3b303f;
-
-    border-radius: 14px;
-
-    background:
-        linear-gradient(
-            145deg,
-            #1b1720,
-            #121016
-        );
-
-    box-shadow:
-        0 25px 70px
-        rgba(0, 0, 0, 0.5);
-
-    text-align: center;
+.hero-stack {
+    width: 52px;
+    height: 52px;
 }
 
-.signin-icon {
-    width: 70px;
-
-    height: 70px;
-
-    margin:
-        0
-        auto
-        20px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    border-radius: 16px;
-
-    background:
-        linear-gradient(
-            135deg,
-            #8531ee,
-            #a62fff
-        );
-
-    font-size: 31px;
-
-    box-shadow:
-        0 10px 30px
-        rgba(139, 48, 255, 0.3);
+.hero-stack span {
+    width: 30px;
+    height: 30px;
 }
 
-.signin-card h1 {
-    margin: 0;
-
-    color: #eee5f4;
-
-    font-family:
-        Georgia,
-        "Times New Roman",
-        serif;
-
-    font-size: 38px;
+.hero-stack span:nth-child(1) {
+    left: 2px;
+    top: 2px;
 }
 
-.signin-subtitle {
-    margin:
-        10px
-        0
-        30px;
-
-    color: #948997;
-
-    font-size: 14px;
-}
-
-
-/* =====================================================
-   SIGN IN FORM
-===================================================== */
-
-.signin-form {
-    text-align: left;
-}
-
-.form-group {
-    margin-bottom: 20px;
-}
-
-.form-group label {
-    display: block;
-
-    margin-bottom: 8px;
-
-    color: #e5dfe8;
-
-    font-size: 13px;
-
-    font-weight: 700;
-}
-
-.form-group input {
-    width: 100%;
-
-    height: 50px;
-
-    padding:
-        0
-        14px;
-
-    border:
-        1px solid #39313d;
-
-    border-radius: 7px;
-
-    outline: none;
-
-    background: #0f0d13;
-
-    color: white;
-
-    font-size: 14px;
-}
-
-.form-group input::placeholder {
-    color: #6d6470;
-}
-
-.form-group input:focus {
-    border-color: #9138fa;
-
-    box-shadow:
-        0 0 0 2px
-        rgba(145, 56, 250, 0.12);
-}
-
-
-/* =====================================================
-   PASSWORD
-===================================================== */
-
-.password-wrapper {
-    position: relative;
-}
-
-.password-wrapper input {
-    padding-right: 65px;
-}
-
-.show-password {
-    position: absolute;
-
-    right: 12px;
-
-    top: 50%;
-
-    transform: translateY(-50%);
-
-    border: none;
-
-    background: transparent;
-
-    color: #a856e8;
-
-    font-size: 11px;
-
-    font-weight: 700;
-}
-
-
-/* =====================================================
-   SIGN IN ERROR
-===================================================== */
-
-.signin-error {
-    margin-bottom: 18px;
-
-    padding: 11px;
-
-    border:
-        1px solid #703044;
-
-    border-radius: 6px;
-
-    background: #28151d;
-
-    color: #ff8cac;
-
-    font-size: 12px;
-}
-
-
-/* =====================================================
-   SIGN IN BUTTON
-===================================================== */
-
-.signin-submit {
-    width: 100%;
-
-    height: 50px;
-
-    border: none;
-
-    border-radius: 7px;
-
-    background:
-        linear-gradient(
-            135deg,
-            #8131e7,
-            #9d30ff
-        );
-
-    color: white;
-
-    font-size: 14px;
-
-    font-weight: 800;
-
-    box-shadow:
-        0 10px 25px
-        rgba(139, 48, 255, 0.2);
-
-    transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease;
-}
-
-.signin-submit:hover {
-    transform:
-        translateY(-1px);
-
-    box-shadow:
-        0 14px 30px
-        rgba(139, 48, 255, 0.3);
-}
-
-
-/* =====================================================
-   DIVIDER
-===================================================== */
-
-.signin-divider {
-    display: flex;
-
-    align-items: center;
-
-    gap: 12px;
-
-    margin:
-        25px
-        0;
-
-    color: #675e69;
-
-    font-size: 11px;
-}
-
-.signin-divider::before,
-.signin-divider::after {
-    content: "";
-
-    flex: 1;
-
-    height: 1px;
-
-    background: #302832;
-}
-
-
-/* =====================================================
-   GOOGLE
-===================================================== */
-
-.google-login {
-    width: 100%;
-
-    height: 47px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    gap: 9px;
-
-    border:
-        1px solid #39313d;
-
-    border-radius: 7px;
-
-    background: #17141b;
-
-    color: #ddd5df;
-
-    font-size: 13px;
-
-    font-weight: 700;
-}
-
-.google-login:hover {
-    background: #211c25;
-}
-
-.google-login span {
-    font-size: 18px;
-
-    font-weight: 900;
-}
-
-
-/* =====================================================
-   SIGN UP
-===================================================== */
-
-.signup-text {
-    margin:
-        24px
-        0
-        0;
-
-    color: #817781;
-
-    font-size: 13px;
-}
-
-.signup-button {
-    margin-left: 5px;
-
-    border: none;
-
-    background: transparent;
-
-    color: #bd65ff;
-
-    font-weight: 700;
-}
-
-.signup-button:hover {
-    text-decoration: underline;
-}
-
-
-/* =====================================================
-   BACK BUTTON
-===================================================== */
-
-.back-login {
-    margin-top: 20px;
-
-    border: none;
-
-    background: transparent;
-
-    color: #817781;
-
-    font-size: 12px;
-}
-
-.back-login:hover {
-    color: #c06cff;
-}
-
-
-/* =====================================================
-   COMIC READER
-===================================================== */
-
-.reader-page {
-    min-height: 100vh;
-
-    background:
-        linear-gradient(
-            180deg,
-            #120d19,
-            #09080c
-        );
-
-    padding-bottom: 80px;
-}
-
-.reader-header {
-    width: min(1000px, 94%);
-
-    margin: 0 auto;
-
-    padding:
-        25px
-        0
-        35px;
-}
-
-.back-button {
-    padding:
-        10px
-        17px;
-
-    border:
-        1px solid #3b303f;
-
-    border-radius: 7px;
-
-    background: #17131b;
-
-    color: #bcb2c0;
-
-    font-size: 12px;
-
-    font-weight: 700;
-}
-
-.back-button:hover {
-    border-color: #8435db;
-
-    color: white;
-}
-
-.reader-title {
-    text-align: center;
-
-    padding-top: 30px;
-}
-
-.reader-badge {
-    display: inline-block;
-
-    padding:
-        6px
-        12px;
-
-    border:
-        1px solid #62369a;
-
-    border-radius: 20px;
-
-    color: #bd80ee;
-
-    font-size: 10px;
-
-    font-weight: 800;
-}
-
-.reader-title h1 {
-    margin:
-        15px
-        0
-        7px;
-
-    color: #eee7f3;
-
-    font-family:
-        Georgia,
-        "Times New Roman",
-        serif;
-
-    font-size:
-        clamp(35px, 5vw, 60px);
-}
-
-.reader-author {
-    margin: 0;
-
-    color: #b96aff;
-
-    font-size: 16px;
-
-    font-weight: 700;
-}
-
-.reader-description {
-    max-width: 600px;
-
-    margin:
-        12px
-        auto
-        0;
-
-    color: #918694;
-
-    font-size: 13px;
-}
-
-
-/* =====================================================
-   READER STATUS
-===================================================== */
-
-.reader-status {
-    min-height: 300px;
-
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: center;
-
-    justify-content: center;
-
-    color: #8e838f;
-}
-
-.reader-error {
-    max-width: 500px;
-
-    margin:
-        50px
-        auto;
-
-    text-align: center;
-
-    padding: 35px;
-
-    border:
-        1px solid #512839;
-
-    border-radius: 12px;
-
-    background: #191117;
-}
-
-.reader-error h2 {
-    color: #e7dce4;
-}
-
-.reader-error p {
-    color: #978c97;
-}
-
-
-/* =====================================================
-   COMIC PAGES
-===================================================== */
-
-.comic-pages {
-    width: 100%;
-
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: center;
-
-    gap: 30px;
-}
-
-.comic-page {
-    position: relative;
-
-    width: min(1000px, 96%);
-
-    overflow: hidden;
-
-    background: #050505;
-
-    box-shadow:
-        0 15px 50px
-        rgba(0, 0, 0, 0.45);
-}
-
-.comic-page img {
-    width: 100%;
-
-    height: auto;
-
-    display: block;
-}
-
-.page-label {
-    position: absolute;
-
-    z-index: 5;
-
-    top: 10px;
-
+.hero-stack span:nth-child(2) {
     left: 10px;
-
-    padding:
-        6px
-        10px;
-
-    border-radius: 5px;
-
-    background:
-        rgba(0, 0, 0, 0.72);
-
-    color: white;
-
-    font-size: 11px;
-
-    font-weight: 700;
+    top: 10px;
 }
 
+.hero-stack span:nth-child(3) {
+    left: 18px;
+    top: 18px;
+}
 
-/* =====================================================
-   MOBILE
-===================================================== */
+.hero h1 {
+    margin: 0;
+    font-family: Georgia, serif;
+    font-size: clamp(52px, 7vw, 92px);
+    background: linear-gradient(
+        90deg,
+        #ffffff,
+        #e2bfff
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
 
-@media (max-width: 900px) {
+.hero p {
+    color: #aaa0b4;
+    font-size: 18px;
+    margin: 20px 0 35px;
+}
 
-    .header-container {
-        gap: 12px;
-    }
+.hero-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+}
 
-    .search-container {
-        margin-left: 5px;
-    }
+.hero-primary,
+.hero-secondary {
+    border-radius: 9px;
+    padding: 15px 25px;
+    font-weight: 700;
+    border: none;
+}
 
-    .logo-text {
-        font-size: 17px;
-    }
+.hero-primary {
+    color: white;
+    background: linear-gradient(
+        135deg,
+        #8b2cff,
+        #bd2cff
+    );
+}
 
-    .nav-button {
-        padding:
-            9px
-            11px;
+.hero-secondary {
+    background: transparent;
+    color: white;
+    border: 1px solid #4a3b55;
+}
 
-        font-size: 11px;
+@media (max-width: 800px) {
+    .main-header {
+        padding: 0 20px;
     }
 
     .user-email {
         display: none;
     }
 
-    .comic-grid {
-        grid-template-columns:
-            repeat(
-                auto-fill,
-                minmax(210px, 1fr)
-            );
-    }
-}
-
-
-@media (max-width: 650px) {
-
-    .top-header {
-        height: auto;
-
-        padding:
-            12px
-            0;
+    .brand {
+        font-size: 18px;
     }
 
-    .header-container {
-        flex-wrap: wrap;
+    .header-actions {
+        gap: 8px;
     }
 
-    .logo {
-        width: 100%;
+    .read-button {
+        display: none;
     }
 
-    .search-container {
-        order: 3;
-
-        width: 100%;
-
-        max-width: none;
-
-        margin: 0;
+    .hero h1 {
+        font-size: 52px;
     }
 
-    .navigation {
-        margin-left: auto;
-    }
-
-    .hero-section {
-        padding-top: 50px;
-    }
-
-    .hero-section h1 {
-        font-size: 48px;
-    }
-
-    .section-heading {
-        align-items: center;
-    }
-
-    .comic-grid {
-        grid-template-columns:
-            repeat(2, 1fr);
-
-        gap: 12px;
-    }
-
-    .comic-info {
-        padding: 12px;
-    }
-
-    .comic-info h3 {
-        font-size: 14px;
-    }
-
-    .comic-description {
-        font-size: 10px;
-    }
-
-    .signin-card {
-        padding:
-            30px
-            20px;
-    }
-
-    .signin-card h1 {
-        font-size: 32px;
-    }
-}
-
-
-@media (max-width: 420px) {
-
-    .comic-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .navigation {
-        width: 100%;
-
-        justify-content: flex-end;
-    }
-
-    .hero-section h1 {
-        font-size: 40px;
+    .hero-buttons {
+        flex-direction: column;
     }
 }

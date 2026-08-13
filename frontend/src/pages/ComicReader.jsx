@@ -1,240 +1,366 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import "./ComicReader.css";
 
-function SignIn({
+function ComicReader({
+    user,
+    onSignOut,
     onBack,
-    onLogin
+    onUpload
 }) {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-
+    const [comics, setComics] = useState([]);
+    const [selectedComic, setSelectedComic] = useState(null);
+    const [pages, setPages] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [pageLoading, setPageLoading] = useState(false);
     const [error, setError] = useState("");
 
-    const [showPassword, setShowPassword] =
-        useState(false);
+    useEffect(() => {
+        loadComics();
+    }, []);
 
-    const handleSubmit = (event) => {
-        event.preventDefault();
-
+    const loadComics = async () => {
+        setLoading(true);
         setError("");
 
-        const cleanEmail = email.trim();
-
-        if (!cleanEmail) {
-            setError(
-                "Please enter your email address."
+        try {
+            const response = await fetch(
+                "http://localhost:8080/api/comics"
             );
-            return;
-        }
 
-        if (!cleanEmail.includes("@")) {
+            if (!response.ok) {
+                throw new Error(
+                    "Unable to load comics."
+                );
+            }
+
+            const data = await response.json();
+
+            setComics(data);
+        } catch (error) {
+            console.error(error);
+
             setError(
-                "Please enter a valid email address."
+                "Unable to connect to the comic server."
             );
-            return;
-        }
-
-        if (!password) {
-            setError(
-                "Please enter your password."
-            );
-            return;
-        }
-
-        if (password.length < 4) {
-            setError(
-                "Password must contain at least 4 characters."
-            );
-            return;
-        }
-
-        const loggedUser = {
-            email: cleanEmail
-        };
-
-        if (onLogin) {
-            onLogin(loggedUser);
+        } finally {
+            setLoading(false);
         }
     };
 
-    return (
-        <main className="signin-page">
+    const openComic = async (comic) => {
+        setSelectedComic(comic);
+        setPages([]);
+        setPageLoading(true);
+        setError("");
 
-            <div className="signin-card">
+        try {
+            const response = await fetch(
+                `http://localhost:8080/api/comics/${comic.id}/pages`
+            );
 
-                {/* ICON */}
+            if (!response.ok) {
+                throw new Error(
+                    "Unable to load comic pages."
+                );
+            }
 
-                <div className="signin-icon">
-                    📚
-                </div>
+            const data = await response.json();
 
+            setPages(data);
+        } catch (error) {
+            console.error(error);
 
-                {/* TITLE */}
+            setError(
+                "Unable to load the comic pages."
+            );
+        } finally {
+            setPageLoading(false);
+        }
+    };
 
-                <h1>
-                    Sign In
-                </h1>
+    const closeReader = () => {
+        setSelectedComic(null);
+        setPages([]);
+        setError("");
+    };
 
-                <p className="signin-subtitle">
-                    Welcome back to City of Comics
-                </p>
+    if (selectedComic) {
+        return (
+            <div className="comic-reader-page">
 
+                <header className="reader-header">
 
-                {/* FORM */}
+                    <button
+                        className="reader-back"
+                        onClick={closeReader}
+                    >
+                        ← Back to Collection
+                    </button>
 
-                <form
-                    className="signin-form"
-                    onSubmit={handleSubmit}
-                >
-
-                    {/* EMAIL */}
-
-                    <div className="form-group">
-
-                        <label htmlFor="email">
-                            Email
-                        </label>
-
-                        <input
-                            id="email"
-                            type="email"
-                            value={email}
-                            onChange={(event) =>
-                                setEmail(
-                                    event.target.value
-                                )
-                            }
-                            placeholder="Enter your email"
-                            autoComplete="email"
-                        />
-
+                    <div className="reader-title">
+                        {selectedComic.title}
                     </div>
 
+                    {user && (
+                        <button
+                            className="reader-signout"
+                            onClick={onSignOut}
+                        >
+                            SIGN OUT
+                        </button>
+                    )}
 
-                    {/* PASSWORD */}
+                </header>
 
-                    <div className="form-group">
+                <main className="panel-reader">
 
-                        <label htmlFor="password">
-                            Password
-                        </label>
+                    <div className="panel-heading">
+                        <span>
+                            {selectedComic.title}
+                        </span>
 
-                        <div className="password-wrapper">
-
-                            <input
-                                id="password"
-                                type={
-                                    showPassword
-                                        ? "text"
-                                        : "password"
-                                }
-                                value={password}
-                                onChange={(event) =>
-                                    setPassword(
-                                        event.target.value
-                                    )
-                                }
-                                placeholder="Enter your password"
-                                autoComplete="current-password"
-                            />
-
-                            <button
-                                type="button"
-                                className="show-password"
-                                onClick={() =>
-                                    setShowPassword(
-                                        !showPassword
-                                    )
-                                }
-                            >
-                                {showPassword
-                                    ? "Hide"
-                                    : "Show"}
-                            </button>
-
-                        </div>
-
+                        <small>
+                            {pages.length} Panels
+                        </small>
                     </div>
 
-
-                    {/* ERROR */}
-
-                    {error && (
-                        <div className="signin-error">
-                            ⚠ {error}
+                    {pageLoading && (
+                        <div className="reader-message">
+                            Loading panels...
                         </div>
                     )}
 
+                    {!pageLoading &&
+                        pages.length === 0 && (
+                            <div className="reader-message">
+                                No comic panels have been added yet.
+                            </div>
+                        )}
 
-                    {/* SUBMIT */}
+                    <div className="comic-panels">
 
-                    <button
-                        type="submit"
-                        className="signin-submit"
-                    >
-                        SIGN IN
-                    </button>
+                        {pages.map((page, index) => (
+                            <div
+                                className="comic-panel"
+                                key={
+                                    page.id ||
+                                    page.pageNumber ||
+                                    index
+                                }
+                            >
 
-                </form>
+                                {page.imageUrl ? (
+                                    <img
+                                        src={page.imageUrl}
+                                        alt={`${selectedComic.title} panel ${
+                                            page.pageNumber ||
+                                            index + 1
+                                        }`}
+                                    />
+                                ) : (
+                                    <div className="panel-placeholder">
+                                        Panel{" "}
+                                        {page.pageNumber ||
+                                            index + 1}
+                                    </div>
+                                )}
 
+                            </div>
+                        ))}
 
-                {/* DIVIDER */}
+                    </div>
 
-                <div className="signin-divider">
-                    <span>OR</span>
-                </div>
-
-
-                {/* GOOGLE */}
-
-                <button
-                    type="button"
-                    className="google-login"
-                    onClick={() => {
-                        setError(
-                            "Google login will be connected later."
-                        );
-                    }}
-                >
-                    <span>G</span>
-                    Continue with Google
-                </button>
-
-
-                {/* REGISTER */}
-
-                <p className="signup-text">
-
-                    Don't have an account?
-
-                    <button
-                        type="button"
-                        className="signup-button"
-                        onClick={() =>
-                            setError(
-                                "Registration will be added next."
-                            )
-                        }
-                    >
-                        Create account
-                    </button>
-
-                </p>
-
-
-                {/* BACK */}
-
-                <button
-                    type="button"
-                    className="back-login"
-                    onClick={onBack}
-                >
-                    ← Back to Comics
-                </button>
+                </main>
 
             </div>
+        );
+    }
 
-        </main>
+    return (
+        <div className="comic-reader-page">
+
+            <header className="reader-header">
+
+                <button
+                    className="reader-brand"
+                    onClick={onBack}
+                >
+                    <div className="small-logo">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+
+                    <span>City of Comics</span>
+                </button>
+
+                <div className="reader-search">
+                    <input
+                        type="text"
+                        placeholder="Enter comics to search"
+                        onChange={(event) => {
+                            const value =
+                                event.target.value
+                                    .toLowerCase();
+
+                            const filtered =
+                                comics.filter((comic) =>
+                                    comic.title
+                                        ?.toLowerCase()
+                                        .includes(value)
+                                );
+
+                            setComics(filtered);
+                        }}
+                    />
+
+                    <span>🔍</span>
+                </div>
+
+                <div className="reader-actions">
+
+                    {user && (
+                        <span className="reader-email">
+                            {user.email}
+                        </span>
+                    )}
+
+                    <button
+                        className="reader-read-button"
+                        onClick={() => {
+                            setSelectedComic(null);
+                        }}
+                    >
+                        📖 Read Comics
+                    </button>
+
+                    {user && (
+                        <>
+                            <button
+                                className="upload-button"
+                                onClick={onUpload}
+                            >
+                                + Add Comic
+                            </button>
+
+                            <button
+                                className="reader-signout"
+                                onClick={onSignOut}
+                            >
+                                SIGN OUT
+                            </button>
+                        </>
+                    )}
+
+                </div>
+
+            </header>
+
+            <main className="collection">
+
+                <div className="collection-heading">
+
+                    <span>COLLECTION</span>
+
+                    <h1>Read Comics</h1>
+
+                    <p>
+                        Explore our collection and discover
+                        your next story.
+                    </p>
+
+                </div>
+
+                {loading && (
+                    <div className="collection-message">
+                        Loading comics...
+                    </div>
+                )}
+
+                {error && (
+                    <div className="collection-error">
+                        {error}
+                    </div>
+                )}
+
+                {!loading &&
+                    !error &&
+                    comics.length === 0 && (
+                        <div className="empty-collection">
+                            <h2>No comics available</h2>
+
+                            <p>
+                                Add your first comic to start
+                                building the collection.
+                            </p>
+
+                            {user && (
+                                <button
+                                    onClick={onUpload}
+                                >
+                                    + Add Comic
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+                <div className="comic-grid">
+
+                    {comics.map((comic) => (
+                        <article
+                            className="comic-card"
+                            key={comic.id}
+                        >
+
+                            <div className="comic-image">
+
+                                {comic.imageUrl ? (
+                                    <img
+                                        src={comic.imageUrl}
+                                        alt={comic.title}
+                                    />
+                                ) : (
+                                    <div className="comic-image-placeholder">
+                                        <span>📚</span>
+                                    </div>
+                                )}
+
+                            </div>
+
+                            <div className="comic-info">
+
+                                <h2>
+                                    {comic.title}
+                                </h2>
+
+                                <h4>
+                                    By {comic.author}
+                                </h4>
+
+                                <p>
+                                    {comic.description ||
+                                        "Discover this comic and start reading."}
+                                </p>
+
+                                <button
+                                    onClick={() =>
+                                        openComic(comic)
+                                    }
+                                >
+                                    Read Comic →
+                                </button>
+
+                            </div>
+
+                        </article>
+                    ))}
+
+                </div>
+
+            </main>
+
+        </div>
     );
 }
 
-export default SignIn;
+export default ComicReader;
