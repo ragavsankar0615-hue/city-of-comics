@@ -7,6 +7,7 @@ function ComicReader({
     onBack,
     onUpload
 }) {
+
     const [comics, setComics] = useState([]);
     const [selectedComic, setSelectedComic] = useState(null);
     const [pages, setPages] = useState([]);
@@ -14,17 +15,42 @@ function ComicReader({
     const [pageLoading, setPageLoading] = useState(false);
     const [error, setError] = useState("");
 
+    const API_BASE_URL = "http://localhost:8080";
+
+    // Convert backend image paths into complete backend URLs
+    const getImageUrl = (url) => {
+
+        if (!url) {
+            return "";
+        }
+
+        if (
+            url.startsWith("http://") ||
+            url.startsWith("https://")
+        ) {
+            return url;
+        }
+
+        if (url.startsWith("/")) {
+            return `${API_BASE_URL}${url}`;
+        }
+
+        return `${API_BASE_URL}/${url}`;
+    };
+
     useEffect(() => {
         loadComics();
     }, []);
 
     const loadComics = async () => {
+
         setLoading(true);
         setError("");
 
         try {
+
             const response = await fetch(
-                "http://localhost:8080/api/comics"
+                `${API_BASE_URL}/api/comics`
             );
 
             if (!response.ok) {
@@ -36,26 +62,32 @@ function ComicReader({
             const data = await response.json();
 
             setComics(data);
+
         } catch (error) {
+
             console.error(error);
 
             setError(
                 "Unable to connect to the comic server."
             );
+
         } finally {
+
             setLoading(false);
         }
     };
 
     const openComic = async (comic) => {
+
         setSelectedComic(comic);
         setPages([]);
         setPageLoading(true);
         setError("");
 
         try {
+
             const response = await fetch(
-                `http://localhost:8080/api/comics/${comic.id}/pages`
+                `${API_BASE_URL}/api/comics/${comic.id}/pages`
             );
 
             if (!response.ok) {
@@ -67,24 +99,34 @@ function ComicReader({
             const data = await response.json();
 
             setPages(data);
+
         } catch (error) {
+
             console.error(error);
 
             setError(
                 "Unable to load the comic pages."
             );
+
         } finally {
+
             setPageLoading(false);
         }
     };
 
     const closeReader = () => {
+
         setSelectedComic(null);
         setPages([]);
         setError("");
     };
 
+    // ==============================
+    // COMIC READER
+    // ==============================
+
     if (selectedComic) {
+
         return (
             <div className="comic-reader-page">
 
@@ -115,6 +157,7 @@ function ComicReader({
                 <main className="panel-reader">
 
                     <div className="panel-heading">
+
                         <span>
                             {selectedComic.title}
                         </span>
@@ -122,6 +165,7 @@ function ComicReader({
                         <small>
                             {pages.length} Panels
                         </small>
+
                     </div>
 
                     {pageLoading && (
@@ -137,9 +181,16 @@ function ComicReader({
                             </div>
                         )}
 
+                    {error && (
+                        <div className="collection-error">
+                            {error}
+                        </div>
+                    )}
+
                     <div className="comic-panels">
 
                         {pages.map((page, index) => (
+
                             <div
                                 className="comic-panel"
                                 key={
@@ -150,22 +201,45 @@ function ComicReader({
                             >
 
                                 {page.imageUrl ? (
+
                                     <img
-                                        src={page.imageUrl}
-                                        alt={`${selectedComic.title} panel ${
-                                            page.pageNumber ||
-                                            index + 1
-                                        }`}
+                                        src={getImageUrl(
+                                            page.imageUrl
+                                        )}
+                                        alt={
+                                            `${selectedComic.title} panel ${
+                                                page.pageNumber ||
+                                                index + 1
+                                            }`
+                                        }
+                                        loading="lazy"
+                                        onError={(e) => {
+                                            console.error(
+                                                "Image failed:",
+                                                getImageUrl(
+                                                    page.imageUrl
+                                                )
+                                            );
+
+                                            e.currentTarget.style.display =
+                                                "none";
+                                        }}
                                     />
+
                                 ) : (
+
                                     <div className="panel-placeholder">
+
                                         Panel{" "}
                                         {page.pageNumber ||
                                             index + 1}
+
                                     </div>
+
                                 )}
 
                             </div>
+
                         ))}
 
                     </div>
@@ -176,6 +250,10 @@ function ComicReader({
         );
     }
 
+    // ==============================
+    // COMIC COLLECTION
+    // ==============================
+
     return (
         <div className="comic-reader-page">
 
@@ -185,20 +263,26 @@ function ComicReader({
                     className="reader-brand"
                     onClick={onBack}
                 >
+
                     <div className="small-logo">
                         <span></span>
                         <span></span>
                         <span></span>
                     </div>
 
-                    <span>City of Comics</span>
+                    <span>
+                        City of Comics
+                    </span>
+
                 </button>
 
                 <div className="reader-search">
+
                     <input
                         type="text"
                         placeholder="Enter comics to search"
                         onChange={(event) => {
+
                             const value =
                                 event.target.value
                                     .toLowerCase();
@@ -215,6 +299,7 @@ function ComicReader({
                     />
 
                     <span>🔍</span>
+
                 </div>
 
                 <div className="reader-actions">
@@ -260,9 +345,13 @@ function ComicReader({
 
                 <div className="collection-heading">
 
-                    <span>COLLECTION</span>
+                    <span>
+                        COLLECTION
+                    </span>
 
-                    <h1>Read Comics</h1>
+                    <h1>
+                        Read Comics
+                    </h1>
 
                     <p>
                         Explore our collection and discover
@@ -286,8 +375,12 @@ function ComicReader({
                 {!loading &&
                     !error &&
                     comics.length === 0 && (
+
                         <div className="empty-collection">
-                            <h2>No comics available</h2>
+
+                            <h2>
+                                No comics available
+                            </h2>
 
                             <p>
                                 Add your first comic to start
@@ -301,12 +394,14 @@ function ComicReader({
                                     + Add Comic
                                 </button>
                             )}
+
                         </div>
                     )}
 
                 <div className="comic-grid">
 
                     {comics.map((comic) => (
+
                         <article
                             className="comic-card"
                             key={comic.id}
@@ -315,13 +410,23 @@ function ComicReader({
                             <div className="comic-image">
 
                                 {comic.imageUrl ? (
+
                                     <img
-                                        src={comic.imageUrl}
+                                        src={getImageUrl(
+                                            comic.imageUrl
+                                        )}
                                         alt={comic.title}
+                                        loading="lazy"
                                     />
+
                                 ) : (
+
                                     <div className="comic-image-placeholder">
-                                        <span>📚</span>
+
+                                        <span>
+                                            📚
+                                        </span>
+
                                     </div>
                                 )}
 
@@ -353,6 +458,7 @@ function ComicReader({
                             </div>
 
                         </article>
+
                     ))}
 
                 </div>
