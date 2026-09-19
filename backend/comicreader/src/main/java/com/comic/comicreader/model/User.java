@@ -1,6 +1,11 @@
 package com.comic.comicreader.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "users")
@@ -10,36 +15,26 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(
-            nullable = false,
-            unique = true,
-            length = 255
-    )
+    @Column(nullable = false, unique = true, length = 255)
     private String email;
 
-    @Column(
-            nullable = false,
-            length = 255
-    )
+    @Column(nullable = false, length = 255)
     private String password;
 
-    @Column(
-            nullable = false,
-            length = 20
-    )
-    private String role;
+    @Column(nullable = false, length = 20)
+    private String role = "USER";
+
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified = true;
 
     public User() {
     }
 
-    public User(
-            String email,
-            String password,
-            String role
-    ) {
+    public User(String email, String password, String role) {
         this.email = email;
         this.password = password;
         this.role = role;
+        this.emailVerified = true;
     }
 
     public Long getId() {
@@ -72,5 +67,13 @@ public class User {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
     }
 }

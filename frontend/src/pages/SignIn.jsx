@@ -1,29 +1,27 @@
 import React, { useState } from "react";
-import "./SignIn.css";
+import { API_BASE_URL } from "../config";
 
-function SignIn({
-    onBack,
-    onRegister,
-    onLogin
-}) {
-
+export default function SignIn({ onLogin, onRegister, onBack }) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-
-    const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
     const handleSubmit = async (e) => {
-
         e.preventDefault();
 
         setError("");
+
+        if (!email.trim() || !password) {
+            setError("Please enter your email and password.");
+            return;
+        }
+
         setLoading(true);
 
         try {
-
             const response = await fetch(
-                "http://localhost:8080/api/auth/login",
+                `${API_BASE_URL}/api/auth/login`,
                 {
                     method: "POST",
                     headers: {
@@ -31,20 +29,17 @@ function SignIn({
                     },
                     credentials: "include",
                     body: JSON.stringify({
-                        email:
-                            email.trim().toLowerCase(),
+                        email: email.trim(),
                         password
                     })
                 }
             );
 
-            const data =
-                await response.json();
+            const data = await response.json();
 
             if (!response.ok) {
                 throw new Error(
-                    data.message ||
-                    "Login failed"
+                    data.message || "Invalid email or password."
                 );
             }
 
@@ -54,99 +49,306 @@ function SignIn({
                 role: data.role
             });
 
-        } catch (error) {
-
+        } catch (err) {
             setError(
-                error.message ||
-                "Unable to sign in."
+                err.message || "Unable to connect to server."
             );
-
         } finally {
-
             setLoading(false);
         }
     };
 
     return (
-        <div className="auth-page">
+        <div className="coc-login">
 
-            <div className="auth-card">
+            <div className="coc-login-bg">
+                <div className="coc-glow coc-glow-1"></div>
+                <div className="coc-glow coc-glow-2"></div>
+                <div className="coc-glow coc-glow-3"></div>
 
-                <button
-                    className="back-button"
-                    onClick={onBack}
-                >
-                    ← Back
-                </button>
+                <div className="coc-rays"></div>
+                <div className="coc-dots"></div>
+            </div>
 
-                <h1>Welcome Back</h1>
+            <button
+                className="coc-back"
+                onClick={onBack}
+                type="button"
+            >
+                ← BACK
+            </button>
 
-                <p>
-                    Sign in to continue to City of Comics.
-                </p>
+            <div className="coc-logo">
+                <small>CITY</small>
+                <strong>OF COMICS</strong>
+            </div>
 
-                {error && (
-                    <div className="auth-error">
-                        {error}
+            <div className="coc-login-layout">
+
+                <div className="coc-login-art">
+
+                    <div className="coc-art-number">
+                        01 / LOGIN
                     </div>
-                )}
 
-                <form onSubmit={handleSubmit}>
+                    <div className="coc-art-content">
 
-                    <label>Email</label>
+                        <span>
+                            ENTER THE UNIVERSE
+                        </span>
 
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(e) =>
-                            setEmail(e.target.value)
-                        }
-                        placeholder="Enter your email"
-                        required
-                    />
+                        <h1>
+                            ENTER
+                            <br />
 
-                    <label>Password</label>
+                            <i>THE</i>
 
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) =>
-                            setPassword(e.target.value)
-                        }
-                        placeholder="Enter your password"
-                        required
-                    />
+                            <br />
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                    >
-                        {loading
-                            ? "Signing In..."
-                            : "Sign In"}
-                    </button>
+                            WORLD.
+                        </h1>
 
-                </form>
+                        <p>
+                            Every page opens another universe.
+                            <br />
+                            Your next story is waiting.
+                        </p>
 
-                <div className="auth-switch">
+                    </div>
 
-                    <span>
-                        Don't have an account?
-                    </span>
+                    <div className="coc-hero">
 
-                    <button
-                        type="button"
-                        onClick={onRegister}
-                    >
-                        Create Account
-                    </button>
+                        <div className="coc-hero-glow"></div>
+
+                        <div className="coc-hero-body">
+
+                            <div className="coc-hero-head"></div>
+
+                            <div className="coc-hero-torso">
+
+                                <div className="coc-hero-star">
+                                    ★
+                                </div>
+
+                            </div>
+
+                            <div className="coc-hero-arm coc-arm-left"></div>
+                            <div className="coc-hero-arm coc-arm-right"></div>
+
+                        </div>
+
+                    </div>
+
+                    <div className="coc-art-footer">
+                        <span>READ</span>
+                        <span>DISCOVER</span>
+                        <span>EXPERIENCE</span>
+                    </div>
 
                 </div>
+
+                <div className="coc-login-space">
+
+                    <div className="coc-glass-layer coc-glass-back"></div>
+
+                    <div className="coc-glass-layer coc-glass-middle"></div>
+
+                    <div className="coc-login-card">
+
+                        <div className="coc-card-light"></div>
+
+                        <div className="coc-card-header">
+
+                            <div>
+                                <span>
+                                    CITY OF COMICS
+                                </span>
+
+                                <small>
+                                    MEMBER ACCESS
+                                </small>
+                            </div>
+
+                            <div className="coc-card-symbol">
+                                ✦
+                            </div>
+
+                        </div>
+
+                        <div className="coc-card-title">
+
+                            <span>
+                                WELCOME BACK
+                            </span>
+
+                            <h2>
+                                Continue
+                                <br />
+                                <em>your story.</em>
+                            </h2>
+
+                            <p>
+                                Sign in to enter your comic universe.
+                            </p>
+
+                        </div>
+
+                        {error && (
+                            <div className="coc-error">
+                                {error}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit}>
+
+                            <div className="coc-field">
+
+                                <label>
+                                    EMAIL ADDRESS
+                                </label>
+
+                                <div className="coc-input">
+
+                                    <span>@</span>
+
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) =>
+                                            setEmail(e.target.value)
+                                        }
+                                        placeholder="you@example.com"
+                                        autoComplete="email"
+                                        required
+                                    />
+
+                                </div>
+
+                            </div>
+
+                            <div className="coc-field">
+
+                                <label>
+                                    PASSWORD
+                                </label>
+
+                                <div className="coc-input">
+
+                                    <span>●</span>
+
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) =>
+                                            setPassword(e.target.value)
+                                        }
+                                        placeholder="Enter your password"
+                                        autoComplete="current-password"
+                                        required
+                                    />
+
+                                </div>
+
+                            </div>
+
+                            <div className="coc-options">
+
+                                <label>
+                                    <input type="checkbox" />
+                                    <span>
+                                        Remember me
+                                    </span>
+                                </label>
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setError(
+                                            "Password reset is not configured yet."
+                                        )
+                                    }
+                                >
+                                    Forgot password?
+                                </button>
+
+                            </div>
+
+                            <button
+                                type="submit"
+                                className="coc-enter"
+                                disabled={loading}
+                            >
+
+                                <span>
+                                    {loading
+                                        ? "ENTERING..."
+                                        : "ENTER THE WORLD"}
+                                </span>
+
+                                <strong>
+                                    →
+                                </strong>
+
+                            </button>
+
+                        </form>
+
+                        <div className="coc-divider">
+
+                            <span></span>
+
+                            OR
+
+                            <span></span>
+
+                        </div>
+
+                        <div className="coc-register">
+
+                            <span>
+                                New to City of Comics?
+                            </span>
+
+                            <button
+                                type="button"
+                                onClick={onRegister}
+                            >
+                                CREATE ACCOUNT
+                                <strong>→</strong>
+                            </button>
+
+                        </div>
+
+                        <div className="coc-card-footer">
+
+                            <span>
+                                SECURE ACCESS
+                            </span>
+
+                            <span>
+                                COC / 2026
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div className="coc-footer">
+
+                <span>
+                    CITY OF COMICS © 2026
+                </span>
+
+                <span>
+                    READ • DISCOVER • EXPERIENCE
+                </span>
 
             </div>
 
         </div>
     );
 }
-
-export default SignIn;

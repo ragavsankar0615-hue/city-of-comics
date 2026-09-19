@@ -1,81 +1,65 @@
 import React, { useEffect, useState } from "react";
+import "./App.css";
 
+import ComicReader from "./pages/ComicReader";
 import SignIn from "./pages/SignIn";
 import Register from "./pages/Register";
-import ComicReader from "./pages/ComicReader";
 import UploadComic from "./pages/UploadComic";
 import EditComic from "./pages/EditComic";
 
-import "./App.css";
+import { API_BASE_URL } from "./config";
 
-const API_BASE_URL =
-    "http://localhost:8080";
-
-function App() {
-
+export default function App() {
     const [page, setPage] = useState("home");
     const [user, setUser] = useState(null);
-    const [editingComic, setEditingComic] =
-        useState(null);
-    const [loading, setLoading] =
-        useState(true);
+    const [editingComic, setEditingComic] = useState(null);
+    const [loadingSession, setLoadingSession] = useState(true);
 
     useEffect(() => {
-
-        const checkSession = async () => {
-
-            try {
-
-                const response = await fetch(
-                    `${API_BASE_URL}/api/auth/me`,
-                    {
-                        credentials: "include"
-                    }
-                );
-
-                if (response.ok) {
-
-                    const data =
-                        await response.json();
-
-                    setUser({
-                        userId: data.userId,
-                        email: data.email,
-                        role: data.role
-                    });
-                }
-
-            } catch (error) {
-
-                console.log(
-                    "No active session."
-                );
-
-            } finally {
-
-                setLoading(false);
-            }
-        };
-
         checkSession();
-
     }, []);
 
-    const handleLogin = (userData) => {
-
-        setUser(userData);
-        setPage("home");
-    };
-
-    const handleRegisterSuccess = () => {
-
-        setPage("signin");
-    };
-
-    const handleSignOut = async () => {
-
+    const checkSession = async () => {
         try {
+            const response = await fetch(
+                `${API_BASE_URL}/api/auth/me`,
+                {
+                    method: "GET",
+                    credentials: "include"
+                }
+            );
 
+            if (response.ok) {
+                const data = await response.json();
+
+                setUser({
+                    userId: data.userId,
+                    email: data.email,
+                    role: data.role
+                });
+            } else {
+                setUser(null);
+            }
+        } catch (error) {
+            console.error("Session check failed:", error);
+            setUser(null);
+        } finally {
+            setLoadingSession(false);
+        }
+    };
+
+    const handleLogin = (userData) => {
+        setUser({
+            userId: userData.userId,
+            email: userData.email,
+            role: userData.role
+        });
+
+        setPage("library");
+    };
+
+    const handleLogout = async () => {
+        try {
             await fetch(
                 `${API_BASE_URL}/api/auth/logout`,
                 {
@@ -83,10 +67,8 @@ function App() {
                     credentials: "include"
                 }
             );
-
         } catch (error) {
-
-            console.error(error);
+            console.error("Logout error:", error);
         }
 
         setUser(null);
@@ -94,9 +76,44 @@ function App() {
         setPage("home");
     };
 
-    const handleEditComic = (comic) => {
+    const openHome = () => {
+        setPage("home");
+    };
 
-        if (user?.role !== "HOST") {
+    const openSignIn = () => {
+        setPage("signin");
+    };
+
+    const openRegister = () => {
+        setPage("register");
+    };
+
+    const openLibrary = () => {
+        setPage("library");
+    };
+
+    const openUpload = () => {
+        if (!user) {
+            setPage("signin");
+            return;
+        }
+
+        if (user.role !== "HOST") {
+            alert("Only HOST can upload comics.");
+            return;
+        }
+
+        setPage("upload");
+    };
+
+    const openEdit = (comic) => {
+        if (!user) {
+            setPage("signin");
+            return;
+        }
+
+        if (user.role !== "HOST") {
+            alert("Only HOST can edit comics.");
             return;
         }
 
@@ -104,263 +121,161 @@ function App() {
         setPage("edit");
     };
 
-    const handleDeleteComic = async (comic) => {
-
-        if (user?.role !== "HOST") {
-            return;
-        }
-
-        const confirmed =
-            window.confirm(
-                `Are you sure you want to delete "${comic.title}"?`
-            );
-
-        if (!confirmed) {
-            return;
-        }
-
-        try {
-
-            const response = await fetch(
-                `${API_BASE_URL}/api/comics/${comic.id}`,
-                {
-                    method: "DELETE",
-                    credentials: "include"
-                }
-            );
-
-            const message =
-                await response.text();
-
-            if (!response.ok) {
-                throw new Error(
-                    message ||
-                    "Failed to delete comic."
-                );
-            }
-
-            alert(
-                "Comic deleted successfully."
-            );
-
-            setPage("read");
-
-            window.dispatchEvent(
-                new Event("comicDeleted")
-            );
-
-        } catch (error) {
-
-            alert(
-                error.message ||
-                "Unable to delete comic."
-            );
-        }
+    const handleRegisterSuccess = () => {
+        setPage("signin");
     };
 
-    if (loading) {
+    const handleUploadComplete = () => {
+        setPage("library");
+    };
 
+    const handleEditComplete = () => {
+        setEditingComic(null);
+        setPage("library");
+    };
+
+    if (loadingSession) {
         return (
-            <div className="loading-screen">
-                Loading City of Comics...
+            <div className="app-loading">
+                <div className="loading-logo">
+                    CITY OF COMICS
+                </div>
+
+                <div className="loading-line"></div>
+
+                <div className="loading-text">
+                    ENTERING THE UNIVERSE...
+                </div>
             </div>
         );
     }
 
     if (page === "signin") {
-
         return (
             <SignIn
-                onBack={() =>
-                    setPage("home")
-                }
-                onRegister={() =>
-                    setPage("register")
-                }
                 onLogin={handleLogin}
+                onRegister={openRegister}
+                onBack={openHome}
             />
         );
     }
 
     if (page === "register") {
-
         return (
             <Register
-                onBack={() =>
-                    setPage("home")
-                }
-                onSignIn={() =>
-                    setPage("signin")
-                }
-                onRegister={
-                    handleRegisterSuccess
-                }
-            />
-        );
-    }
-
-    if (page === "read") {
-
-        return (
-            <ComicReader
-                user={user}
-                onSignOut={handleSignOut}
-                onBack={() =>
-                    setPage("home")
-                }
-                onUpload={() => {
-
-                    if (
-                        user?.role === "HOST"
-                    ) {
-                        setPage("upload");
-                    }
-
-                }}
-                onEdit={handleEditComic}
-                onDelete={handleDeleteComic}
+                onRegisterSuccess={handleRegisterSuccess}
+                onSignIn={openSignIn}
+                onBack={openHome}
             />
         );
     }
 
     if (page === "upload") {
-
-        if (user?.role !== "HOST") {
-
-            return (
-                <div className="loading-screen">
-                    Access denied
-                </div>
-            );
-        }
-
         return (
             <UploadComic
                 user={user}
-                onBack={() =>
-                    setPage("read")
-                }
+                onBack={openLibrary}
+                onUploaded={handleUploadComplete}
             />
         );
     }
 
-    if (page === "edit") {
-
-        if (
-            user?.role !== "HOST" ||
-            !editingComic
-        ) {
-
-            return (
-                <div className="loading-screen">
-                    Access denied
-                </div>
-            );
-        }
-
+    if (page === "edit" && editingComic) {
         return (
             <EditComic
                 comic={editingComic}
-                onBack={() => {
-                    setEditingComic(null);
-                    setPage("read");
-                }}
-                onUpdated={() => {
-                    setEditingComic(null);
-                    setPage("read");
-                }}
+                user={user}
+                onBack={openLibrary}
+                onUpdated={handleEditComplete}
+            />
+        );
+    }
+
+    if (page === "library") {
+        return (
+            <ComicReader
+                user={user}
+                onSignIn={openSignIn}
+                onSignOut={handleLogout}
+                onBack={openHome}
+                onUpload={openUpload}
+                onEdit={openEdit}
             />
         );
     }
 
     return (
-        <div className="app">
+        <div className="home-page">
 
-            <header className="top-header">
+            <header className="home-header">
 
-                <div className="logo">
+                <button
+                    className="brand"
+                    onClick={openHome}
+                    type="button"
+                >
+                    <div className="brand-mark">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
 
-                    <span className="logo-icon">
-                        🟩🟪
+                    <span>
+                        CITY OF COMICS
                     </span>
+                </button>
 
-                    City of Comics
+                <nav className="home-nav">
 
-                </div>
-
-                <div className="search-box">
-
-                    <input
-                        type="text"
-                        placeholder="Enter comics to search"
-                    />
-
-                    <span>🔍</span>
-
-                </div>
-
-                <nav className="nav-actions">
+                    <button
+                        className="nav-button"
+                        onClick={openLibrary}
+                        type="button"
+                    >
+                        Library
+                    </button>
 
                     {user ? (
                         <>
-
-                            <span className="user-email">
+                            <span className="home-user">
                                 {user.email}
                             </span>
 
                             {user.role === "HOST" && (
-                                <span className="host-badge">
-                                    👑 HOST
-                                </span>
-                            )}
-
-                            <button
-                                onClick={() =>
-                                    setPage("read")
-                                }
-                            >
-                                📖 Read Comics
-                            </button>
-
-                            {user.role === "HOST" && (
                                 <button
-                                    onClick={() =>
-                                        setPage("upload")
-                                    }
+                                    className="nav-button nav-primary"
+                                    onClick={openUpload}
+                                    type="button"
                                 >
-                                    ➕ Add Comic
+                                    Upload Comic
                                 </button>
                             )}
 
                             <button
-                                className="sign-out"
-                                onClick={
-                                    handleSignOut
-                                }
+                                className="nav-button"
+                                onClick={handleLogout}
+                                type="button"
                             >
-                                SIGN OUT
+                                Sign Out
                             </button>
-
                         </>
                     ) : (
                         <>
-
                             <button
-                                onClick={() =>
-                                    setPage("signin")
-                                }
+                                className="nav-button"
+                                onClick={openSignIn}
+                                type="button"
                             >
-                                SIGN IN
+                                Sign In
                             </button>
 
                             <button
-                                onClick={() =>
-                                    setPage("register")
-                                }
+                                className="nav-button nav-primary"
+                                onClick={openRegister}
+                                type="button"
                             >
-                                REGISTER
+                                Create Account
                             </button>
-
                         </>
                     )}
 
@@ -368,72 +283,102 @@ function App() {
 
             </header>
 
-            <main className="home-page">
+            <main className="home-main">
 
-                <section className="hero-section">
+                <div className="home-content">
 
-                    <div className="hero-content">
+                    <div className="home-label">
+                        DIGITAL COMIC READER
+                    </div>
 
-                        <span className="hero-label">
-                            CITY OF COMICS
-                        </span>
+                    <h1>
+                        CITY
+                        <br />
+                        OF COMICS
+                    </h1>
 
-                        <h1>
-                            Your World of
-                            <br />
-                            <span>Comics</span>
-                        </h1>
+                    <p>
+                        Discover stories.
+                        <br />
+                        Turn the page.
+                        <br />
+                        Enter another world.
+                    </p>
 
-                        <p>
-                            Discover, read and explore
-                            your favorite comic stories
-                            in one place.
-                        </p>
+                    <div className="home-buttons">
 
-                        <div className="hero-buttons">
+                        <button
+                            className="read-button"
+                            onClick={openLibrary}
+                            type="button"
+                        >
+                            READ COMICS
+                            <span>→</span>
+                        </button>
 
+                        {!user && (
                             <button
-                                onClick={() =>
-                                    setPage("read")
-                                }
+                                className="create-button"
+                                onClick={openRegister}
+                                type="button"
                             >
-                                📖 Read Comics
+                                CREATE ACCOUNT
                             </button>
+                        )}
 
-                            {!user && (
-                                <button
-                                    onClick={() =>
-                                        setPage(
-                                            "register"
-                                        )
-                                    }
-                                >
-                                    Get Started
-                                </button>
-                            )}
-
-                            {user?.role === "HOST" && (
-                                <button
-                                    onClick={() =>
-                                        setPage(
-                                            "upload"
-                                        )
-                                    }
-                                >
-                                    ➕ Add Comic
-                                </button>
-                            )}
-
-                        </div>
+                        {user && (
+                            <button
+                                className="create-button"
+                                onClick={openLibrary}
+                                type="button"
+                            >
+                                OPEN LIBRARY
+                            </button>
+                        )}
 
                     </div>
 
-                </section>
+                </div>
+
+                <div className="home-decoration">
+
+                    <div className="decoration-orbit orbit-one"></div>
+                    <div className="decoration-orbit orbit-two"></div>
+
+                    <div className="decoration-circle">
+                        <div className="decoration-circle-inner">
+                            ★
+                        </div>
+                    </div>
+
+                    <div className="decoration-text">
+                        STORIES
+                        <br />
+                        BEYOND
+                        <br />
+                        REALITY
+                    </div>
+
+                    <div className="decoration-number">
+                        01
+                    </div>
+
+                </div>
 
             </main>
+
+            <footer className="home-footer">
+
+                <span>
+                    READ • DISCOVER • EXPERIENCE
+                </span>
+
+                <span>
+                    © CITY OF COMICS
+                </span>
+
+            </footer>
 
         </div>
     );
 }
-
-export default App;

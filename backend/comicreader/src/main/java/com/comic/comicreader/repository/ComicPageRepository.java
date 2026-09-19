@@ -9,7 +9,8 @@ import com.comic.comicreader.model.ComicPage;
 public interface ComicPageRepository
         extends JpaRepository<ComicPage, Long> {
 
-    List<ComicPage> findByComicIdOrderByPageNumberAsc(
+    List<ComicPage>
+    findByComicIdOrderByPageNumberAsc(
             Long comicId
     );
 

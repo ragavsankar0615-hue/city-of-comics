@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import "./EditComic.css";
 
+import { API_BASE_URL } from "../config";
+
 function EditComic({
     comic,
     onBack,
-    onUpdated
+    onSuccess
 }) {
-
     const [title, setTitle] =
         useState(comic.title || "");
 
@@ -16,20 +17,20 @@ function EditComic({
     const [description, setDescription] =
         useState(comic.description || "");
 
-    const [cover, setCover] =
-        useState(null);
+    const [loading, setLoading] =
+        useState(false);
 
     const [error, setError] =
         useState("");
 
-    const [loading, setLoading] =
-        useState(false);
+    const [message, setMessage] =
+        useState("");
 
     const handleSubmit = async (event) => {
-
         event.preventDefault();
 
         setError("");
+        setMessage("");
 
         if (!title.trim()) {
             setError(
@@ -45,76 +46,58 @@ function EditComic({
             return;
         }
 
-        const formData =
-            new FormData();
-
-        formData.append(
-            "title",
-            title.trim()
-        );
-
-        formData.append(
-            "author",
-            author.trim()
-        );
-
-        formData.append(
-            "description",
-            description.trim()
-        );
-
-        if (cover) {
-            formData.append(
-                "cover",
-                cover
-            );
-        }
-
         setLoading(true);
 
         try {
-
-            const response =
-                await fetch(
-                    `http://localhost:8080/api/comics/${comic.id}`,
-                    {
-                        method: "PUT",
-                        credentials: "include",
-                        body: formData
-                    }
-                );
+            const response = await fetch(
+                `${API_BASE_URL}/api/comics/${comic.id}`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+                    credentials: "include",
+                    body: JSON.stringify({
+                        title: title.trim(),
+                        author: author.trim(),
+                        description:
+                            description.trim(),
+                        imageUrl:
+                            comic.imageUrl || ""
+                    })
+                }
+            );
 
             const data =
                 await response.json();
 
             if (!response.ok) {
-
                 throw new Error(
-                    typeof data === "string"
-                        ? data
-                        : "Failed to update comic."
+                    data.message ||
+                    "Unable to update comic."
                 );
             }
 
-            alert(
-                "Comic updated successfully."
+            setMessage(
+                "Comic updated successfully!"
             );
 
-            window.dispatchEvent(
-                new Event("comicUpdated")
-            );
-
-            onUpdated();
+            setTimeout(() => {
+                onSuccess();
+            }, 700);
 
         } catch (error) {
+            console.error(
+                "Edit error:",
+                error
+            );
 
             setError(
                 error.message ||
                 "Unable to update comic."
             );
-
         } finally {
-
             setLoading(false);
         }
     };
@@ -128,33 +111,18 @@ function EditComic({
                     className="edit-back"
                     onClick={onBack}
                 >
-                    ← Back
+                    ← Back to Collection
                 </button>
 
-                <div className="edit-heading">
+                <h1>
+                    Edit Comic
+                </h1>
 
-                    <span>
-                        HOST MANAGEMENT
-                    </span>
-
-                    <h1>
-                        Edit Comic
-                    </h1>
-
-                    <p>
-                        Update the comic information.
-                    </p>
-
-                </div>
-
-                {error && (
-                    <div className="edit-error">
-                        {error}
-                    </div>
-                )}
+                <p className="edit-subtitle">
+                    Update the comic information
+                </p>
 
                 <form
-                    className="edit-form"
                     onSubmit={handleSubmit}
                 >
 
@@ -165,9 +133,9 @@ function EditComic({
                     <input
                         type="text"
                         value={title}
-                        onChange={(e) =>
+                        onChange={(event) =>
                             setTitle(
-                                e.target.value
+                                event.target.value
                             )
                         }
                         required
@@ -180,9 +148,9 @@ function EditComic({
                     <input
                         type="text"
                         value={author}
-                        onChange={(e) =>
+                        onChange={(event) =>
                             setAuthor(
-                                e.target.value
+                                event.target.value
                             )
                         }
                         required
@@ -194,71 +162,35 @@ function EditComic({
 
                     <textarea
                         value={description}
-                        onChange={(e) =>
+                        onChange={(event) =>
                             setDescription(
-                                e.target.value
+                                event.target.value
                             )
                         }
                         rows="6"
                     />
 
-                    <label>
-                        Replace Cover
-                    </label>
-
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) =>
-                            setCover(
-                                e.target.files[0] ||
-                                null
-                            )
-                        }
-                    />
-
-                    {comic.imageUrl && (
-                        <div className="current-cover">
-
-                            <span>
-                                Current Cover
-                            </span>
-
-                            <img
-                                src={
-                                    comic.imageUrl.startsWith(
-                                        "http"
-                                    )
-                                        ? comic.imageUrl
-                                        : `http://localhost:8080${comic.imageUrl}`
-                                }
-                                alt={comic.title}
-                            />
-
+                    {error && (
+                        <div className="edit-error">
+                            {error}
                         </div>
                     )}
 
-                    <div className="edit-actions">
+                    {message && (
+                        <div className="edit-success">
+                            {message}
+                        </div>
+                    )}
 
-                        <button
-                            type="button"
-                            className="cancel-button"
-                            onClick={onBack}
-                        >
-                            Cancel
-                        </button>
-
-                        <button
-                            type="submit"
-                            className="save-button"
-                            disabled={loading}
-                        >
-                            {loading
-                                ? "Saving..."
-                                : "Save Changes"}
-                        </button>
-
-                    </div>
+                    <button
+                        type="submit"
+                        className="save-edit-button"
+                        disabled={loading}
+                    >
+                        {loading
+                            ? "Saving..."
+                            : "Save Changes"}
+                    </button>
 
                 </form>
 

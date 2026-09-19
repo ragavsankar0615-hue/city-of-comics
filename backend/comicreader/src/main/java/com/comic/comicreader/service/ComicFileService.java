@@ -4,98 +4,66 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class ComicFileService {
 
-    private final Path uploadDirectory;
+    private final Path uploadDir;
 
     public ComicFileService(
-            @Value("${comic.upload-dir}") String uploadDir
-    ) throws IOException {
+            @Value("${comic.upload-dir:uploads}")
+            String uploadDirectory) {
 
-        uploadDirectory = Paths
-                .get(uploadDir)
+        this.uploadDir = Paths
+                .get(uploadDirectory)
                 .toAbsolutePath()
                 .normalize();
-
-        Files.createDirectories(uploadDirectory);
     }
 
-    public Path createComicFolder(Long comicId) throws IOException {
+    public Path createComicFolder(Long comicId)
+            throws IOException {
 
-        Path folder = uploadDirectory
-                .resolve(String.valueOf(comicId))
-                .normalize();
+        Path comicFolder =
+                uploadDir.resolve(
+                        String.valueOf(comicId)
+                );
 
-        if (!folder.startsWith(uploadDirectory)) {
-            throw new IOException("Invalid comic folder");
-        }
+        Files.createDirectories(comicFolder);
 
-        Files.createDirectories(folder);
-
-        return folder;
+        return comicFolder;
     }
 
-    public String saveFile(
-            MultipartFile file,
-            Path folder,
-            String fileName
-    ) throws IOException {
+    public void deleteComicFolder(Long comicId)
+            throws IOException {
 
-        if (file == null || file.isEmpty()) {
-            throw new IOException("File is empty");
+        Path comicFolder =
+                uploadDir.resolve(
+                        String.valueOf(comicId)
+                );
+
+        if (!Files.exists(comicFolder)) {
+            return;
         }
 
-        Path destination = folder
-                .resolve(fileName)
-                .normalize();
+        try (Stream<Path> paths =
+                     Files.walk(comicFolder)) {
 
-        if (!destination.startsWith(folder)) {
-            throw new IOException("Invalid file path");
-        }
+            paths.sorted(
+                    Comparator.reverseOrder()
+            ).forEach(path -> {
 
-        Files.copy(
-                file.getInputStream(),
-                destination
-        );
+                try {
+                    Files.deleteIfExists(path);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
 
-        return destination.toString();
-    }
-
-    public void deleteComicFolder(Long comicId) {
-
-        try {
-
-            Path folder = uploadDirectory
-                    .resolve(String.valueOf(comicId))
-                    .normalize();
-
-            if (!folder.startsWith(uploadDirectory)) {
-                return;
-            }
-
-            if (!Files.exists(folder)) {
-                return;
-            }
-
-            try (var stream = Files.walk(folder)) {
-
-                stream
-                        .sorted((a, b) -> b.compareTo(a))
-                        .forEach(path -> {
-                            try {
-                                Files.deleteIfExists(path);
-                            } catch (IOException ignored) {
-                            }
-                        });
-            }
-
-        } catch (IOException ignored) {
+            });
         }
     }
 }

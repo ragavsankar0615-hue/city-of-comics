@@ -1,26 +1,256 @@
-* {
-    box-sizing: border-box;
+.coc-register-page {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: #050505;
+    color: #fff;
 }
 
-html,
-body,
-#root {
-    margin: 0;
-    min-height: 100%;
+.coc-register-left {
+    min-height: 100vh;
+    padding: 55px 7%;
+    position: relative;
+    overflow: hidden;
+    background:
+        radial-gradient(
+            circle at 70% 50%,
+            rgba(120, 40, 180, 0.35),
+            transparent 35%
+        ),
+        linear-gradient(
+            135deg,
+            #09020f,
+            #180522,
+            #050505
+        );
+}
+
+.coc-register-left::before {
+    content: "";
+    position: absolute;
+    inset: -20%;
+    background:
+        repeating-linear-gradient(
+            120deg,
+            transparent 0 45px,
+            rgba(255,255,255,0.035) 46px 48px
+        );
+    transform: rotate(-8deg);
+    pointer-events: none;
+}
+
+.coc-back-button {
+    position: relative;
+    z-index: 2;
+    border: 0;
+    background: transparent;
+    color: #fff;
+    font-family: Georgia, serif;
+    letter-spacing: 2px;
+    font-size: 13px;
+}
+
+.coc-register-brand {
+    position: relative;
+    z-index: 2;
+    margin-top: 65px;
+    display: flex;
+    flex-direction: column;
+    letter-spacing: 5px;
+    font-family: Georgia, serif;
+}
+
+.coc-register-brand span {
+    color: #a95cff;
+    font-size: 14px;
+}
+
+.coc-register-brand strong {
+    font-size: 25px;
+    color: #fff;
+}
+
+.coc-register-copy {
+    position: relative;
+    z-index: 2;
+    margin-top: 120px;
+}
+
+.coc-register-copy > span {
+    color: #b75cff;
+    letter-spacing: 5px;
+    font-size: 12px;
+}
+
+.coc-register-copy h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(65px, 7vw, 120px);
+    line-height: 0.78;
+    margin: 30px 0;
+    letter-spacing: -5px;
+}
+
+.coc-register-copy p {
+    font-family: Georgia, serif;
+    color: #aaa;
+    font-size: 17px;
+}
+
+.coc-register-right {
+    background: #f7f7f4;
+    color: #111;
+    padding: 10vh 8%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.coc-register-heading > span {
+    color: #7829bd;
+    letter-spacing: 5px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.coc-register-heading h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(55px, 6vw, 90px);
+    line-height: 0.88;
+    letter-spacing: -4px;
+    margin: 25px 0;
+}
+
+.coc-register-heading p {
+    color: #666;
+    font-family: Georgia, serif;
+    line-height: 1.6;
+}
+
+.coc-register-form {
+    margin-top: 35px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.coc-register-form label {
+    font-size: 11px;
+    letter-spacing: 3px;
+    font-weight: 700;
+    margin-top: 12px;
+}
+
+.coc-register-form input {
     width: 100%;
+    padding: 20px;
+    border: 1px solid #ddd;
+    background: #eceff7;
+    color: #111;
+    outline: none;
+    font-size: 16px;
 }
 
-body {
-    font-family: Arial, Helvetica, sans-serif;
-    background: #09070d;
+.coc-register-form input:focus {
+    border-color: #7829bd;
+}
+
+.coc-register-submit {
+    margin-top: 20px;
+    padding: 22px;
+    border: 0;
+    background: #050505;
     color: white;
+    font-family: Georgia, serif;
+    font-weight: 700;
+    letter-spacing: 2px;
+    font-size: 14px;
 }
 
-button,
-input {
-    font-family: inherit;
+.coc-register-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
-button {
+.coc-message {
+    padding: 14px 16px;
+    margin-top: 8px;
+    font-size: 13px;
+}
+
+.coc-message.error {
+    background: #ffe9ec;
+    color: #a30020;
+    border-left: 3px solid #a30020;
+}
+
+.coc-message.success {
+    background: #e8f8ed;
+    color: #176b35;
+    border-left: 3px solid #176b35;
+}
+
+.coc-register-login,
+.coc-resend {
+    margin-top: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.coc-register-login button,
+.coc-resend button {
+    border: 0;
+    background: transparent;
+    color: #7829bd;
+    font-weight: 700;
     cursor: pointer;
+}
+
+.coc-otp-input {
+    font-size: 30px !important;
+    letter-spacing: 15px;
+    text-align: center;
+    font-weight: 700;
+}
+
+.coc-otp-timer {
+    text-align: center;
+    margin: 15px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.coc-otp-timer strong {
+    color: #7829bd;
+    font-size: 18px;
+}
+
+.coc-resend {
+    min-height: 25px;
+    color: #666;
+}
+
+.coc-resend strong {
+    color: #7829bd;
+}
+
+@media (max-width: 900px) {
+
+    .coc-register-page {
+        grid-template-columns: 1fr;
+    }
+
+    .coc-register-left {
+        min-height: 450px;
+    }
+
+    .coc-register-copy {
+        margin-top: 70px;
+    }
+
+    .coc-register-right {
+        min-height: 650px;
+    }
 }

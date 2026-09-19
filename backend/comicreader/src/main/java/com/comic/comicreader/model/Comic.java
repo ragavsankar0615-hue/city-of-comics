@@ -15,35 +15,19 @@ public class Comic {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 200)
+    @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false, length = 200)
     private String author;
 
-    @Column(length = 2000)
+    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(length = 1000)
     private String imageUrl;
 
-    @Column(nullable = false)
     private Integer totalPages = 0;
 
     public Comic() {
-    }
-
-    public Comic(
-            String title,
-            String author,
-            String description,
-            String imageUrl
-    ) {
-        this.title = title;
-        this.author = author;
-        this.description = description;
-        this.imageUrl = imageUrl;
-        this.totalPages = 0;
     }
 
     public Long getId() {

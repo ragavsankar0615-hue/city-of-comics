@@ -5,6 +5,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -16,56 +18,47 @@ public class ComicPage {
     private Long id;
 
     @Column(nullable = false)
-    private Long comicId;
-
-    @Column(nullable = false)
     private Integer pageNumber;
 
-    @Column(nullable = false, length = 1000)
+    @Column(nullable = false)
     private String imageUrl;
 
-    public ComicPage() {
-    }
+    @ManyToOne
+    @JoinColumn(name = "comic_id", nullable = false)
+    private Comic comic;
 
-    public ComicPage(
-            Long comicId,
-            Integer pageNumber,
-            String imageUrl
-    ) {
-        this.comicId = comicId;
-        this.pageNumber = pageNumber;
-        this.imageUrl = imageUrl;
+    public ComicPage() {
     }
 
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getComicId() {
-        return comicId;
-    }
-
-    public void setComicId(Long comicId) {
-        this.comicId = comicId;
-    }
-
     public Integer getPageNumber() {
         return pageNumber;
-    }
-
-    public void setPageNumber(Integer pageNumber) {
-        this.pageNumber = pageNumber;
     }
 
     public String getImageUrl() {
         return imageUrl;
     }
 
+    public Comic getComic() {
+        return comic;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setPageNumber(Integer pageNumber) {
+        this.pageNumber = pageNumber;
+    }
+
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public void setComic(Comic comic) {
+        this.comic = comic;
     }
 }

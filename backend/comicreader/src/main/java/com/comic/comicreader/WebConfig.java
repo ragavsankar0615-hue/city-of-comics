@@ -10,9 +10,10 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class WebConfig implements WebMvcConfigurer {
+public class WebConfig
+        implements WebMvcConfigurer {
 
-    @Value("${comic.upload-dir}")
+    @Value("${comic.upload-dir:uploads}")
     private String uploadDir;
 
     @Value("${FRONTEND_URL:http://localhost:5173}")
@@ -20,13 +21,15 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(
-            ResourceHandlerRegistry registry
-    ) {
-        Path uploadPath = Paths.get(uploadDir)
+            ResourceHandlerRegistry registry) {
+
+        Path uploadPath = Paths
+                .get(uploadDir)
                 .toAbsolutePath()
                 .normalize();
 
-        registry.addResourceHandler("/uploads/**")
+        registry
+                .addResourceHandler("/uploads/**")
                 .addResourceLocations(
                         uploadPath.toUri().toString()
                 );
@@ -34,9 +37,10 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(
-            CorsRegistry registry
-    ) {
-        registry.addMapping("/**")
+            CorsRegistry registry) {
+
+        registry
+                .addMapping("/**")
                 .allowedOrigins(frontendUrl)
                 .allowedMethods(
                         "GET",
