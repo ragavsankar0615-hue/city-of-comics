@@ -32,8 +32,7 @@ public class AuthController {
             EmailVerificationService emailVerificationService) {
 
         this.authService = authService;
-        this.emailVerificationService =
-                emailVerificationService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @PostMapping("/register")
@@ -42,11 +41,13 @@ public class AuthController {
 
         try {
 
+            emailVerificationService.startRegistration(
+                    request.getEmail(),
+                    request.getPassword()
+            );
+
             Instant expiresAt =
-                    emailVerificationService
-                            .sendOtp(
-                                    request.getEmail()
-                            );
+                    Instant.now().plusSeconds(10 * 60);
 
             return ResponseEntity.ok(
                     Map.of(
@@ -76,11 +77,8 @@ public class AuthController {
 
         try {
 
-            String email =
-                    request.get("email");
-
-            String otp =
-                    request.get("otp");
+            String email = request.get("email");
+            String otp = request.get("otp");
 
             if (email == null
                     || email.isBlank()
@@ -98,11 +96,10 @@ public class AuthController {
             }
 
             User user =
-                    emailVerificationService
-                            .verifyOtp(
-                                    email,
-                                    otp
-                            );
+                    emailVerificationService.verifyRegistration(
+                            email,
+                            otp
+                    );
 
             return ResponseEntity
                     .status(HttpStatus.CREATED)
@@ -130,6 +127,53 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/register/resend-otp")
+    public ResponseEntity<?> resendOtp(
+            @RequestBody Map<String, String> request) {
+
+        try {
+
+            String email = request.get("email");
+
+            if (email == null || email.isBlank()) {
+
+                return ResponseEntity
+                        .badRequest()
+                        .body(
+                                Map.of(
+                                        "message",
+                                        "Email is required."
+                                )
+                        );
+            }
+
+            emailVerificationService.resendOtp(email);
+
+            Instant expiresAt =
+                    Instant.now().plusSeconds(10 * 60);
+
+            return ResponseEntity.ok(
+                    Map.of(
+                            "message",
+                            "A new OTP has been sent.",
+                            "expiresAt",
+                            expiresAt
+                    )
+            );
+
+        } catch (RuntimeException e) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            Map.of(
+                                    "message",
+                                    e.getMessage()
+                            )
+                    );
+        }
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(
             @Valid @RequestBody LoginRequest request,
@@ -137,8 +181,7 @@ public class AuthController {
 
         try {
 
-            User user =
-                    authService.login(request);
+            User user = authService.login(request);
 
             session.setAttribute(
                     "userId",
