@@ -16,23 +16,17 @@ public class AuthService {
     private final BCryptPasswordEncoder passwordEncoder =
             new BCryptPasswordEncoder();
 
-    public AuthService(
-            UserRepository userRepository
-    ) {
+    public AuthService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
-    public String register(
-            RegisterRequest request
-    ) {
+    public String register(RegisterRequest request) {
 
-        String email =
-                request.getEmail()
-                        .trim()
-                        .toLowerCase();
+        String email = request.getEmail()
+                .trim()
+                .toLowerCase();
 
         if (userRepository.existsByEmail(email)) {
-
             throw new RuntimeException(
                     "Email is already registered"
             );
@@ -43,50 +37,44 @@ public class AuthService {
                         request.getPassword()
                 );
 
-        User user =
-                new User();
+        User user = new User();
 
         user.setEmail(email);
-        user.setPassword(
-                encryptedPassword
-        );
+        user.setPassword(encryptedPassword);
+
+        // Every new account is a normal USER
+        user.setRole("USER");
 
         userRepository.save(user);
 
         return "Registration successful";
     }
 
-    public String login(
-            LoginRequest request
-    ) {
+    public User login(LoginRequest request) {
 
-        String email =
-                request.getEmail()
-                        .trim()
-                        .toLowerCase();
+        String email = request.getEmail()
+                .trim()
+                .toLowerCase();
 
-        User user =
-                userRepository
-                        .findByEmail(email)
-                        .orElseThrow(
-                                () -> new RuntimeException(
-                                        "Invalid email or password"
-                                )
-                        );
-
-        boolean matches =
-                passwordEncoder.matches(
-                        request.getPassword(),
-                        user.getPassword()
+        User user = userRepository
+                .findByEmail(email)
+                .orElseThrow(
+                        () -> new RuntimeException(
+                                "Invalid email or password"
+                        )
                 );
 
-        if (!matches) {
+        boolean matches = passwordEncoder.matches(
+                request.getPassword(),
+                user.getPassword()
+        );
 
+        if (!matches) {
             throw new RuntimeException(
                     "Invalid email or password"
             );
         }
 
-        return "Login successful";
+        return user;
     }
 }

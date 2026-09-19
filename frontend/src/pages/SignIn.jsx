@@ -6,29 +6,22 @@ function SignIn({
     onRegister,
     onLogin
 }) {
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
 
-    const handleLogin = async (event) => {
-        event.preventDefault();
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
+
+        e.preventDefault();
 
         setError("");
-
-        const cleanEmail = email.trim();
-
-        if (!cleanEmail || !password) {
-            setError(
-                "Please enter your email and password."
-            );
-            return;
-        }
-
         setLoading(true);
 
         try {
+
             const response = await fetch(
                 "http://localhost:8080/api/auth/login",
                 {
@@ -36,181 +29,104 @@ function SignIn({
                     headers: {
                         "Content-Type": "application/json"
                     },
+                    credentials: "include",
                     body: JSON.stringify({
-                        email: cleanEmail,
+                        email:
+                            email.trim().toLowerCase(),
                         password
                     })
                 }
             );
 
-            const message =
-                await response.text();
+            const data =
+                await response.json();
 
             if (!response.ok) {
                 throw new Error(
-                    message ||
-                    "Invalid email or password."
+                    data.message ||
+                    "Login failed"
                 );
             }
 
             onLogin({
-                email: cleanEmail
+                userId: data.userId,
+                email: data.email,
+                role: data.role
             });
 
         } catch (error) {
-            console.error(error);
 
-            if (
-                error.name === "TypeError" ||
-                error.message.includes(
-                    "Failed to fetch"
-                )
-            ) {
-                setError(
-                    "Unable to connect to the server. Please start the backend."
-                );
-            } else {
-                setError(error.message);
-            }
+            setError(
+                error.message ||
+                "Unable to sign in."
+            );
+
         } finally {
+
             setLoading(false);
         }
     };
 
     return (
-        <main className="auth-page">
+        <div className="auth-page">
 
-            <section className="auth-card">
+            <div className="auth-card">
 
-                <div className="auth-logo">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
+                <button
+                    className="back-button"
+                    onClick={onBack}
+                >
+                    ← Back
+                </button>
 
                 <h1>Welcome Back</h1>
 
-                <p className="auth-subtitle">
-                    Sign in to continue reading your comics.
+                <p>
+                    Sign in to continue to City of Comics.
                 </p>
 
                 {error && (
                     <div className="auth-error">
-                        ⚠️
-                        <span>{error}</span>
+                        {error}
                     </div>
                 )}
 
-                <form onSubmit={handleLogin}>
+                <form onSubmit={handleSubmit}>
 
-                    <div className="form-group">
+                    <label>Email</label>
 
-                        <label>
-                            Email address
-                        </label>
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(e) =>
+                            setEmail(e.target.value)
+                        }
+                        placeholder="Enter your email"
+                        required
+                    />
 
-                        <input
-                            type="email"
-                            placeholder="you@example.com"
-                            value={email}
-                            onChange={(e) =>
-                                setEmail(
-                                    e.target.value
-                                )
-                            }
-                            autoComplete="email"
-                            disabled={loading}
-                        />
+                    <label>Password</label>
 
-                    </div>
-
-                    <div className="form-group">
-
-                        <div className="password-heading">
-
-                            <label>
-                                Password
-                            </label>
-
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setError(
-                                        "Password recovery is not available yet."
-                                    )
-                                }
-                            >
-                                Forgot password?
-                            </button>
-
-                        </div>
-
-                        <div className="password-input">
-
-                            <input
-                                type={
-                                    showPassword
-                                        ? "text"
-                                        : "password"
-                                }
-                                placeholder="Enter your password"
-                                value={password}
-                                onChange={(e) =>
-                                    setPassword(
-                                        e.target.value
-                                    )
-                                }
-                                autoComplete="current-password"
-                                disabled={loading}
-                            />
-
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setShowPassword(
-                                        !showPassword
-                                    )
-                                }
-                            >
-                                {showPassword
-                                    ? "Hide"
-                                    : "Show"}
-                            </button>
-
-                        </div>
-
-                    </div>
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) =>
+                            setPassword(e.target.value)
+                        }
+                        placeholder="Enter your password"
+                        required
+                    />
 
                     <button
                         type="submit"
-                        className="primary-auth-button"
                         disabled={loading}
                     >
                         {loading
-                            ? "SIGNING IN..."
-                            : "SIGN IN →"}
+                            ? "Signing In..."
+                            : "Sign In"}
                     </button>
 
                 </form>
-
-                <div className="auth-divider">
-                    <span></span>
-                    <small>OR</small>
-                    <span></span>
-                </div>
-
-                <button
-                    className="google-auth-button"
-                    type="button"
-                    onClick={() =>
-                        setError(
-                            "Google sign in will be available soon."
-                        )
-                    }
-                >
-                    <strong>G</strong>
-                    Continue with Google
-                </button>
 
                 <div className="auth-switch">
 
@@ -222,22 +138,14 @@ function SignIn({
                         type="button"
                         onClick={onRegister}
                     >
-                        Create account
+                        Create Account
                     </button>
 
                 </div>
 
-                <button
-                    className="back-auth-button"
-                    type="button"
-                    onClick={onBack}
-                >
-                    ← Back to Comics
-                </button>
+            </div>
 
-            </section>
-
-        </main>
+        </div>
     );
 }
 

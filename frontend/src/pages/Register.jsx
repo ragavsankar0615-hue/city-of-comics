@@ -6,58 +6,36 @@ function Register({
     onSignIn,
     onRegister
 }) {
-    const [name, setName] = useState("");
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] =
         useState("");
 
-    const [showPassword, setShowPassword] =
-        useState(false);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+    const [loading, setLoading] = useState(false);
 
-    const [loading, setLoading] =
-        useState(false);
+    const handleSubmit = async (e) => {
 
-    const [error, setError] =
-        useState("");
-
-    const handleRegister = async (event) => {
-        event.preventDefault();
+        e.preventDefault();
 
         setError("");
-
-        const cleanName = name.trim();
-        const cleanEmail = email.trim();
-
-        if (
-            !cleanName ||
-            !cleanEmail ||
-            !password ||
-            !confirmPassword
-        ) {
-            setError(
-                "Please fill in all fields."
-            );
-            return;
-        }
-
-        if (password.length < 6) {
-            setError(
-                "Password must contain at least 6 characters."
-            );
-            return;
-        }
+        setSuccess("");
 
         if (password !== confirmPassword) {
+
             setError(
                 "Passwords do not match."
             );
+
             return;
         }
 
         setLoading(true);
 
         try {
+
             const response = await fetch(
                 "http://localhost:8080/api/auth/register",
                 {
@@ -65,206 +43,153 @@ function Register({
                     headers: {
                         "Content-Type": "application/json"
                     },
+                    credentials: "include",
                     body: JSON.stringify({
-                        name: cleanName,
-                        email: cleanEmail,
+                        email:
+                            email.trim().toLowerCase(),
                         password
                     })
                 }
             );
 
-            const message =
-                await response.text();
+            const data =
+                await response.json();
 
             if (!response.ok) {
+
                 throw new Error(
-                    message ||
+                    data.message ||
                     "Registration failed."
                 );
             }
 
-            onRegister({
-                name: cleanName,
-                email: cleanEmail
-            });
+            setSuccess(
+                "Registration successful. You can now sign in."
+            );
+
+            setEmail("");
+            setPassword("");
+            setConfirmPassword("");
+
+            setTimeout(() => {
+                onRegister();
+            }, 1200);
 
         } catch (error) {
-            console.error(error);
 
-            if (
-                error.name === "TypeError" ||
-                error.message.includes(
-                    "Failed to fetch"
-                )
-            ) {
-                setError(
-                    "Unable to connect to the backend."
-                );
-            } else {
-                setError(error.message);
-            }
+            setError(
+                error.message ||
+                "Unable to register."
+            );
+
         } finally {
+
             setLoading(false);
         }
     };
 
     return (
-        <main className="register-page">
+        <div className="auth-page">
 
-            <section className="register-card">
+            <div className="auth-card">
 
-                <div className="register-logo">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
+                <button
+                    className="back-button"
+                    onClick={onBack}
+                >
+                    ← Back
+                </button>
 
                 <h1>Create Account</h1>
 
-                <p className="register-subtitle">
+                <p>
                     Join City of Comics and start reading.
                 </p>
 
                 {error && (
-                    <div className="register-error">
-                        ⚠️
-                        <span>{error}</span>
+                    <div className="auth-error">
+                        {error}
                     </div>
                 )}
 
-                <form onSubmit={handleRegister}>
-
-                    <div className="register-group">
-
-                        <label>Full name</label>
-
-                        <input
-                            type="text"
-                            placeholder="Your name"
-                            value={name}
-                            onChange={(e) =>
-                                setName(
-                                    e.target.value
-                                )
-                            }
-                            disabled={loading}
-                        />
-
+                {success && (
+                    <div className="auth-success">
+                        {success}
                     </div>
+                )}
 
-                    <div className="register-group">
+                <form onSubmit={handleSubmit}>
 
-                        <label>Email address</label>
+                    <label>Email</label>
 
-                        <input
-                            type="email"
-                            placeholder="you@example.com"
-                            value={email}
-                            onChange={(e) =>
-                                setEmail(
-                                    e.target.value
-                                )
-                            }
-                            disabled={loading}
-                        />
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(e) =>
+                            setEmail(e.target.value)
+                        }
+                        placeholder="Enter your email"
+                        required
+                    />
 
-                    </div>
+                    <label>Password</label>
 
-                    <div className="register-group">
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) =>
+                            setPassword(e.target.value)
+                        }
+                        placeholder="Minimum 6 characters"
+                        minLength={6}
+                        required
+                    />
 
-                        <label>Password</label>
+                    <label>
+                        Confirm Password
+                    </label>
 
-                        <div className="register-password">
-
-                            <input
-                                type={
-                                    showPassword
-                                        ? "text"
-                                        : "password"
-                                }
-                                placeholder="Create a password"
-                                value={password}
-                                onChange={(e) =>
-                                    setPassword(
-                                        e.target.value
-                                    )
-                                }
-                                disabled={loading}
-                            />
-
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setShowPassword(
-                                        !showPassword
-                                    )
-                                }
-                            >
-                                {showPassword
-                                    ? "Hide"
-                                    : "Show"}
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                    <div className="register-group">
-
-                        <label>
-                            Confirm password
-                        </label>
-
-                        <input
-                            type="password"
-                            placeholder="Confirm your password"
-                            value={confirmPassword}
-                            onChange={(e) =>
-                                setConfirmPassword(
-                                    e.target.value
-                                )
-                            }
-                            disabled={loading}
-                        />
-
-                    </div>
+                    <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) =>
+                            setConfirmPassword(
+                                e.target.value
+                            )
+                        }
+                        placeholder="Confirm your password"
+                        required
+                    />
 
                     <button
-                        className="register-submit"
                         type="submit"
                         disabled={loading}
                     >
                         {loading
-                            ? "CREATING ACCOUNT..."
-                            : "CREATE ACCOUNT →"}
+                            ? "Creating Account..."
+                            : "Create Account"}
                     </button>
 
                 </form>
 
-                <div className="register-login">
+                <div className="auth-switch">
 
                     <span>
                         Already have an account?
                     </span>
 
                     <button
+                        type="button"
                         onClick={onSignIn}
                     >
-                        Sign in
+                        Sign In
                     </button>
 
                 </div>
 
-                <button
-                    className="register-back"
-                    onClick={onBack}
-                >
-                    ← Back to Comics
-                </button>
+            </div>
 
-            </section>
-
-        </main>
+        </div>
     );
 }
 

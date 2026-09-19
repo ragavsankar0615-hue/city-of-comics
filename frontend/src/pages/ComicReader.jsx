@@ -5,19 +5,32 @@ function ComicReader({
     user,
     onSignOut,
     onBack,
-    onUpload
+    onUpload,
+    onEdit,
+    onDelete
 }) {
 
     const [comics, setComics] = useState([]);
-    const [selectedComic, setSelectedComic] = useState(null);
+    const [selectedComic, setSelectedComic] =
+        useState(null);
+
     const [pages, setPages] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [pageLoading, setPageLoading] = useState(false);
-    const [error, setError] = useState("");
 
-    const API_BASE_URL = "http://localhost:8080";
+    const [loading, setLoading] =
+        useState(true);
 
-    // Convert backend image paths into complete backend URLs
+    const [pageLoading, setPageLoading] =
+        useState(false);
+
+    const [error, setError] =
+        useState("");
+
+    const [searchTerm, setSearchTerm] =
+        useState("");
+
+    const API_BASE_URL =
+        "http://localhost:8080";
+
     const getImageUrl = (url) => {
 
         if (!url) {
@@ -38,10 +51,6 @@ function ComicReader({
         return `${API_BASE_URL}/${url}`;
     };
 
-    useEffect(() => {
-        loadComics();
-    }, []);
-
     const loadComics = async () => {
 
         setLoading(true);
@@ -49,9 +58,10 @@ function ComicReader({
 
         try {
 
-            const response = await fetch(
-                `${API_BASE_URL}/api/comics`
-            );
+            const response =
+                await fetch(
+                    `${API_BASE_URL}/api/comics`
+                );
 
             if (!response.ok) {
                 throw new Error(
@@ -59,7 +69,8 @@ function ComicReader({
                 );
             }
 
-            const data = await response.json();
+            const data =
+                await response.json();
 
             setComics(data);
 
@@ -77,6 +88,48 @@ function ComicReader({
         }
     };
 
+    useEffect(() => {
+
+        loadComics();
+
+        const refresh =
+            () => loadComics();
+
+        window.addEventListener(
+            "comicDeleted",
+            refresh
+        );
+
+        window.addEventListener(
+            "comicUpdated",
+            refresh
+        );
+
+        window.addEventListener(
+            "comicUploaded",
+            refresh
+        );
+
+        return () => {
+
+            window.removeEventListener(
+                "comicDeleted",
+                refresh
+            );
+
+            window.removeEventListener(
+                "comicUpdated",
+                refresh
+            );
+
+            window.removeEventListener(
+                "comicUploaded",
+                refresh
+            );
+        };
+
+    }, []);
+
     const openComic = async (comic) => {
 
         setSelectedComic(comic);
@@ -86,9 +139,10 @@ function ComicReader({
 
         try {
 
-            const response = await fetch(
-                `${API_BASE_URL}/api/comics/${comic.id}/pages`
-            );
+            const response =
+                await fetch(
+                    `${API_BASE_URL}/api/comics/${comic.id}/pages`
+                );
 
             if (!response.ok) {
                 throw new Error(
@@ -96,7 +150,8 @@ function ComicReader({
                 );
             }
 
-            const data = await response.json();
+            const data =
+                await response.json();
 
             setPages(data);
 
@@ -121,9 +176,27 @@ function ComicReader({
         setError("");
     };
 
-    // ==============================
-    // COMIC READER
-    // ==============================
+    const filteredComics =
+        comics.filter((comic) => {
+
+            const value =
+                searchTerm
+                    .trim()
+                    .toLowerCase();
+
+            if (!value) {
+                return true;
+            }
+
+            return (
+                comic.title
+                    ?.toLowerCase()
+                    .includes(value) ||
+                comic.author
+                    ?.toLowerCase()
+                    .includes(value)
+            );
+        });
 
     if (selectedComic) {
 
@@ -189,58 +262,45 @@ function ComicReader({
 
                     <div className="comic-panels">
 
-                        {pages.map((page, index) => (
+                        {pages.map(
+                            (page, index) => (
 
-                            <div
-                                className="comic-panel"
-                                key={
-                                    page.id ||
-                                    page.pageNumber ||
-                                    index
-                                }
-                            >
+                                <div
+                                    className="comic-panel"
+                                    key={
+                                        page.id ||
+                                        page.pageNumber ||
+                                        index
+                                    }
+                                >
 
-                                {page.imageUrl ? (
+                                    {page.imageUrl ? (
 
-                                    <img
-                                        src={getImageUrl(
-                                            page.imageUrl
-                                        )}
-                                        alt={
-                                            `${selectedComic.title} panel ${
+                                        <img
+                                            src={getImageUrl(
+                                                page.imageUrl
+                                            )}
+                                            alt={`${selectedComic.title} panel ${
                                                 page.pageNumber ||
                                                 index + 1
-                                            }`
-                                        }
-                                        loading="lazy"
-                                        onError={(e) => {
-                                            console.error(
-                                                "Image failed:",
-                                                getImageUrl(
-                                                    page.imageUrl
-                                                )
-                                            );
+                                            }`}
+                                            loading="lazy"
+                                        />
 
-                                            e.currentTarget.style.display =
-                                                "none";
-                                        }}
-                                    />
+                                    ) : (
 
-                                ) : (
+                                        <div className="panel-placeholder">
+                                            Panel{" "}
+                                            {page.pageNumber ||
+                                                index + 1}
+                                        </div>
 
-                                    <div className="panel-placeholder">
+                                    )}
 
-                                        Panel{" "}
-                                        {page.pageNumber ||
-                                            index + 1}
+                                </div>
 
-                                    </div>
-
-                                )}
-
-                            </div>
-
-                        ))}
+                            )
+                        )}
 
                     </div>
 
@@ -249,10 +309,6 @@ function ComicReader({
             </div>
         );
     }
-
-    // ==============================
-    // COMIC COLLECTION
-    // ==============================
 
     return (
         <div className="comic-reader-page">
@@ -280,22 +336,13 @@ function ComicReader({
 
                     <input
                         type="text"
+                        value={searchTerm}
                         placeholder="Enter comics to search"
-                        onChange={(event) => {
-
-                            const value =
+                        onChange={(event) =>
+                            setSearchTerm(
                                 event.target.value
-                                    .toLowerCase();
-
-                            const filtered =
-                                comics.filter((comic) =>
-                                    comic.title
-                                        ?.toLowerCase()
-                                        .includes(value)
-                                );
-
-                            setComics(filtered);
-                        }}
+                            )
+                        }
                     />
 
                     <span>🔍</span>
@@ -310,31 +357,37 @@ function ComicReader({
                         </span>
                     )}
 
+                    {user?.role === "HOST" && (
+                        <span className="host-badge">
+                            👑 HOST
+                        </span>
+                    )}
+
                     <button
                         className="reader-read-button"
-                        onClick={() => {
-                            setSelectedComic(null);
-                        }}
+                        onClick={() =>
+                            setSelectedComic(null)
+                        }
                     >
                         📖 Read Comics
                     </button>
 
-                    {user && (
-                        <>
-                            <button
-                                className="upload-button"
-                                onClick={onUpload}
-                            >
-                                + Add Comic
-                            </button>
+                    {user?.role === "HOST" && (
+                        <button
+                            className="upload-button"
+                            onClick={onUpload}
+                        >
+                            + Add Comic
+                        </button>
+                    )}
 
-                            <button
-                                className="reader-signout"
-                                onClick={onSignOut}
-                            >
-                                SIGN OUT
-                            </button>
-                        </>
+                    {user && (
+                        <button
+                            className="reader-signout"
+                            onClick={onSignOut}
+                        >
+                            SIGN OUT
+                        </button>
                     )}
 
                 </div>
@@ -374,20 +427,19 @@ function ComicReader({
 
                 {!loading &&
                     !error &&
-                    comics.length === 0 && (
+                    filteredComics.length === 0 && (
 
                         <div className="empty-collection">
 
                             <h2>
-                                No comics available
+                                No comics found
                             </h2>
 
                             <p>
-                                Add your first comic to start
-                                building the collection.
+                                Try another search.
                             </p>
 
-                            {user && (
+                            {user?.role === "HOST" && (
                                 <button
                                     onClick={onUpload}
                                 >
@@ -400,66 +452,98 @@ function ComicReader({
 
                 <div className="comic-grid">
 
-                    {comics.map((comic) => (
+                    {filteredComics.map(
+                        (comic) => (
 
-                        <article
-                            className="comic-card"
-                            key={comic.id}
-                        >
+                            <article
+                                className="comic-card"
+                                key={comic.id}
+                            >
 
-                            <div className="comic-image">
+                                <div className="comic-image">
 
-                                {comic.imageUrl ? (
+                                    {comic.imageUrl ? (
 
-                                    <img
-                                        src={getImageUrl(
-                                            comic.imageUrl
-                                        )}
-                                        alt={comic.title}
-                                        loading="lazy"
-                                    />
+                                        <img
+                                            src={getImageUrl(
+                                                comic.imageUrl
+                                            )}
+                                            alt={comic.title}
+                                            loading="lazy"
+                                        />
 
-                                ) : (
+                                    ) : (
 
-                                    <div className="comic-image-placeholder">
+                                        <div className="comic-image-placeholder">
+                                            <span>
+                                                📚
+                                            </span>
+                                        </div>
 
-                                        <span>
-                                            📚
-                                        </span>
+                                    )}
 
-                                    </div>
-                                )}
+                                </div>
 
-                            </div>
+                                <div className="comic-info">
 
-                            <div className="comic-info">
+                                    <h2>
+                                        {comic.title}
+                                    </h2>
 
-                                <h2>
-                                    {comic.title}
-                                </h2>
+                                    <h4>
+                                        By {comic.author}
+                                    </h4>
 
-                                <h4>
-                                    By {comic.author}
-                                </h4>
+                                    <p>
+                                        {comic.description ||
+                                            "Discover this comic and start reading."}
+                                    </p>
 
-                                <p>
-                                    {comic.description ||
-                                        "Discover this comic and start reading."}
-                                </p>
+                                    <button
+                                        onClick={() =>
+                                            openComic(
+                                                comic
+                                            )
+                                        }
+                                    >
+                                        Read Comic →
+                                    </button>
 
-                                <button
-                                    onClick={() =>
-                                        openComic(comic)
-                                    }
-                                >
-                                    Read Comic →
-                                </button>
+                                    {user?.role ===
+                                        "HOST" && (
+                                        <div className="comic-management">
 
-                            </div>
+                                            <button
+                                                className="edit-comic-button"
+                                                onClick={() =>
+                                                    onEdit(
+                                                        comic
+                                                    )
+                                                }
+                                            >
+                                                ✏️ Edit
+                                            </button>
 
-                        </article>
+                                            <button
+                                                className="delete-comic-button"
+                                                onClick={() =>
+                                                    onDelete(
+                                                        comic
+                                                    )
+                                                }
+                                            >
+                                                🗑️ Delete
+                                            </button>
 
-                    ))}
+                                        </div>
+                                    )}
+
+                                </div>
+
+                            </article>
+
+                        )
+                    )}
 
                 </div>
 

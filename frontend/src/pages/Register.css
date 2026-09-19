@@ -1,168 +1,191 @@
-.register-page {
+.auth-page {
     min-height: 100vh;
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 40px 20px;
-
     background:
         radial-gradient(
-            circle at 10% 20%,
-            rgba(91, 27, 220, 0.24),
-            transparent 35%
+            circle at 15% 35%,
+            rgba(79, 34, 150, 0.45),
+            transparent 38%
         ),
         radial-gradient(
             circle at 90% 80%,
-            rgba(190, 35, 255, 0.2),
-            transparent 35%
+            rgba(116, 30, 145, 0.35),
+            transparent 40%
         ),
-        #09070d;
+        #08060d;
 }
 
-.register-card {
+.auth-card {
     width: 100%;
-    max-width: 440px;
-    padding: 40px;
-    border-radius: 18px;
-    border: 1px solid #3b2b49;
-    background: #141019;
-    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.5);
+    max-width: 470px;
+    padding: 38px;
+    border: 1px solid rgba(190, 95, 255, 0.22);
+    border-radius: 20px;
+    background: rgba(20, 16, 27, 0.92);
+    box-shadow:
+        0 25px 70px rgba(0, 0, 0, 0.45),
+        0 0 35px rgba(133, 39, 255, 0.08);
 }
 
-.register-logo {
-    width: 48px;
-    height: 48px;
-    position: relative;
-    margin: auto;
+.back-button {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: transparent;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s ease;
 }
 
-.register-logo span {
-    position: absolute;
-    width: 28px;
-    height: 28px;
-    border-radius: 5px;
+.back-button:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(190, 95, 255, 0.35);
 }
 
-.register-logo span:nth-child(1) {
-    background: #a6ff38;
+.auth-card h1 {
+    margin: 28px 0 10px;
+    color: white;
+    font-size: 42px;
+    line-height: 1.1;
+    letter-spacing: -1.5px;
 }
 
-.register-logo span:nth-child(2) {
-    background: #19d9ff;
-    left: 8px;
-    top: 8px;
+.auth-card > p {
+    margin: 0 0 30px;
+    color: #aaa2b3;
+    font-size: 15px;
+    line-height: 1.6;
 }
 
-.register-logo span:nth-child(3) {
-    background: #bd35ff;
-    left: 16px;
-    top: 16px;
-}
-
-.register-card h1 {
-    margin: 25px 0 8px;
-    text-align: center;
-    font-family: Georgia, serif;
-    font-size: 36px;
-}
-
-.register-subtitle {
-    text-align: center;
-    color: #a99eaf;
-    margin-bottom: 25px;
-}
-
-.register-error {
+.auth-card form {
     display: flex;
-    gap: 10px;
-    padding: 12px;
-    border: 1px solid #783146;
-    background: #29131e;
-    color: #ff98a9;
-    border-radius: 8px;
-    margin-bottom: 18px;
+    flex-direction: column;
+    gap: 9px;
 }
 
-.register-group {
-    margin-bottom: 17px;
-}
-
-.register-group label {
+.auth-card form label {
     display: block;
-    margin-bottom: 8px;
+    margin-top: 7px;
+    color: #e8e1ed;
     font-size: 13px;
     font-weight: 700;
 }
 
-.register-group input {
+.auth-card form input {
     width: 100%;
-    height: 48px;
+    height: 46px;
     padding: 0 14px;
-    border-radius: 8px;
-    border: 1px solid #3a3042;
-    background: #0e0b12;
-    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 9px;
     outline: none;
+    background: #100d16;
+    color: white;
+    font-size: 14px;
+    transition: 0.2s ease;
 }
 
-.register-group input:focus {
-    border-color: #a42cff;
+.auth-card form input::placeholder {
+    color: #706978;
 }
 
-.register-password {
-    position: relative;
+.auth-card form input:focus {
+    border-color: #a437ff;
+    box-shadow: 0 0 0 3px rgba(164, 55, 255, 0.12);
 }
 
-.register-password input {
-    padding-right: 65px;
-}
-
-.register-password button {
-    position: absolute;
-    right: 12px;
-    top: 14px;
-    border: none;
-    background: none;
-    color: #bd38ff;
-    font-weight: 700;
-}
-
-.register-submit {
+.auth-card form > button {
     width: 100%;
-    height: 50px;
-    margin-top: 8px;
+    height: 46px;
+    margin-top: 16px;
     border: none;
-    border-radius: 8px;
+    border-radius: 9px;
     background: linear-gradient(
         135deg,
-        #8a2cff,
-        #bc2cff
+        #8d2cff,
+        #b42cff
     );
     color: white;
+    font-size: 14px;
     font-weight: 800;
+    cursor: pointer;
+    transition: 0.2s ease;
 }
 
-.register-submit:disabled {
+.auth-card form > button:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.1);
+    box-shadow: 0 8px 25px rgba(157, 45, 255, 0.25);
+}
+
+.auth-card form > button:disabled {
     opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
 }
 
-.register-login {
+.auth-switch {
     display: flex;
     justify-content: center;
-    gap: 7px;
-    margin-top: 24px;
-    color: #948899;
+    align-items: center;
+    gap: 8px;
+    margin-top: 27px;
+    color: #918899;
+    font-size: 14px;
+}
+
+.auth-switch button {
+    border: none;
+    padding: 0;
+    background: transparent;
+    color: #c23cff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.auth-switch button:hover {
+    color: #d86bff;
+}
+
+.auth-error {
+    margin-bottom: 18px;
+    padding: 11px 13px;
+    border: 1px solid rgba(255, 75, 110, 0.25);
+    border-radius: 8px;
+    background: rgba(255, 50, 90, 0.08);
+    color: #ff8da5;
     font-size: 13px;
 }
 
-.register-login button,
-.register-back {
-    border: none;
-    background: none;
-    color: #bd38ff;
+.auth-success {
+    margin-bottom: 18px;
+    padding: 11px 13px;
+    border: 1px solid rgba(75, 255, 150, 0.2);
+    border-radius: 8px;
+    background: rgba(50, 255, 130, 0.07);
+    color: #7dffaa;
+    font-size: 13px;
 }
 
-.register-back {
-    display: block;
-    margin: 18px auto 0;
+@media (max-width: 520px) {
+
+    .auth-card {
+        padding: 28px 22px;
+        border-radius: 16px;
+    }
+
+    .auth-card h1 {
+        font-size: 34px;
+    }
+
+    .auth-switch {
+        flex-direction: column;
+        gap: 5px;
+    }
 }
