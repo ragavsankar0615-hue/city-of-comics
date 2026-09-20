@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import "./SignIn.css";
 import { API_BASE_URL } from "../config";
 
 export default function SignIn({ onLogin, onRegister, onBack }) {
@@ -9,7 +10,6 @@ export default function SignIn({ onLogin, onRegister, onBack }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         setError("");
 
         if (!email.trim() || !password) {
@@ -65,7 +65,6 @@ export default function SignIn({ onLogin, onRegister, onBack }) {
                 <div className="coc-glow coc-glow-1"></div>
                 <div className="coc-glow coc-glow-2"></div>
                 <div className="coc-glow coc-glow-3"></div>
-
                 <div className="coc-rays"></div>
                 <div className="coc-dots"></div>
             </div>
@@ -92,19 +91,13 @@ export default function SignIn({ onLogin, onRegister, onBack }) {
                     </div>
 
                     <div className="coc-art-content">
-
-                        <span>
-                            ENTER THE UNIVERSE
-                        </span>
+                        <span>ENTER THE UNIVERSE</span>
 
                         <h1>
                             ENTER
                             <br />
-
                             <i>THE</i>
-
                             <br />
-
                             WORLD.
                         </h1>
 
@@ -113,30 +106,23 @@ export default function SignIn({ onLogin, onRegister, onBack }) {
                             <br />
                             Your next story is waiting.
                         </p>
-
                     </div>
 
                     <div className="coc-hero">
-
                         <div className="coc-hero-glow"></div>
 
                         <div className="coc-hero-body">
-
                             <div className="coc-hero-head"></div>
 
                             <div className="coc-hero-torso">
-
                                 <div className="coc-hero-star">
                                     ★
                                 </div>
-
                             </div>
 
                             <div className="coc-hero-arm coc-arm-left"></div>
                             <div className="coc-hero-arm coc-arm-right"></div>
-
                         </div>
-
                     </div>
 
                     <div className="coc-art-footer">
@@ -150,7 +136,6 @@ export default function SignIn({ onLogin, onRegister, onBack }) {
                 <div className="coc-login-space">
 
                     <div className="coc-glass-layer coc-glass-back"></div>
-
                     <div className="coc-glass-layer coc-glass-middle"></div>
 
                     <div className="coc-login-card">
@@ -158,28 +143,18 @@ export default function SignIn({ onLogin, onRegister, onBack }) {
                         <div className="coc-card-light"></div>
 
                         <div className="coc-card-header">
-
                             <div>
-                                <span>
-                                    CITY OF COMICS
-                                </span>
-
-                                <small>
-                                    MEMBER ACCESS
-                                </small>
+                                <span>CITY OF COMICS</span>
+                                <small>MEMBER ACCESS</small>
                             </div>
 
                             <div className="coc-card-symbol">
                                 ✦
                             </div>
-
                         </div>
 
                         <div className="coc-card-title">
-
-                            <span>
-                                WELCOME BACK
-                            </span>
+                            <span>WELCOME BACK</span>
 
                             <h2>
                                 Continue
@@ -190,7 +165,6 @@ export default function SignIn({ onLogin, onRegister, onBack }) {
                             <p>
                                 Sign in to enter your comic universe.
                             </p>
-
                         </div>
 
                         {error && (
@@ -202,13 +176,9 @@ export default function SignIn({ onLogin, onRegister, onBack }) {
                         <form onSubmit={handleSubmit}>
 
                             <div className="coc-field">
-
-                                <label>
-                                    EMAIL ADDRESS
-                                </label>
+                                <label>EMAIL ADDRESS</label>
 
                                 <div className="coc-input">
-
                                     <span>@</span>
 
                                     <input
@@ -221,19 +191,13 @@ export default function SignIn({ onLogin, onRegister, onBack }) {
                                         autoComplete="email"
                                         required
                                     />
-
                                 </div>
-
                             </div>
 
                             <div className="coc-field">
-
-                                <label>
-                                    PASSWORD
-                                </label>
+                                <label>PASSWORD</label>
 
                                 <div className="coc-input">
-
                                     <span>●</span>
 
                                     <input
@@ -246,18 +210,14 @@ export default function SignIn({ onLogin, onRegister, onBack }) {
                                         autoComplete="current-password"
                                         required
                                     />
-
                                 </div>
-
                             </div>
 
                             <div className="coc-options">
 
                                 <label>
                                     <input type="checkbox" />
-                                    <span>
-                                        Remember me
-                                    </span>
+                                    <span>Remember me</span>
                                 </label>
 
                                 <button
@@ -278,29 +238,21 @@ export default function SignIn({ onLogin, onRegister, onBack }) {
                                 className="coc-enter"
                                 disabled={loading}
                             >
-
                                 <span>
                                     {loading
                                         ? "ENTERING..."
                                         : "ENTER THE WORLD"}
                                 </span>
 
-                                <strong>
-                                    →
-                                </strong>
-
+                                <strong>→</strong>
                             </button>
 
                         </form>
 
                         <div className="coc-divider">
-
                             <span></span>
-
                             OR
-
                             <span></span>
-
                         </div>
 
                         <div className="coc-register">
@@ -320,15 +272,8 @@ export default function SignIn({ onLogin, onRegister, onBack }) {
                         </div>
 
                         <div className="coc-card-footer">
-
-                            <span>
-                                SECURE ACCESS
-                            </span>
-
-                            <span>
-                                COC / 2026
-                            </span>
-
+                            <span>SECURE ACCESS</span>
+                            <span>COC / 2026</span>
                         </div>
 
                     </div>
@@ -338,15 +283,8 @@ export default function SignIn({ onLogin, onRegister, onBack }) {
             </div>
 
             <div className="coc-footer">
-
-                <span>
-                    CITY OF COMICS © 2026
-                </span>
-
-                <span>
-                    READ • DISCOVER • EXPERIENCE
-                </span>
-
+                <span>CITY OF COMICS © 2026</span>
+                <span>READ • DISCOVER • EXPERIENCE</span>
             </div>
 
         </div>

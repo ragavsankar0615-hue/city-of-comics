@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import "./ComicReader.css";
 import { API_BASE_URL } from "../config";
 
 export default function ComicReader({

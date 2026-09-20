@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import "./Register.css";
 import { API_BASE_URL } from "../config";
 
 export default function Register({
@@ -11,40 +12,28 @@ export default function Register({
     const [confirmPassword, setConfirmPassword] = useState("");
 
     const [otp, setOtp] = useState("");
-
     const [otpMode, setOtpMode] = useState(false);
 
     const [expiresAt, setExpiresAt] = useState(null);
+    const [remainingSeconds, setRemainingSeconds] = useState(0);
+    const [resendSeconds, setResendSeconds] = useState(0);
 
-    const [remainingSeconds, setRemainingSeconds] =
-        useState(0);
-
-    const [resendSeconds, setResendSeconds] =
-        useState(0);
-
-    const [loading, setLoading] =
-        useState(false);
-
-    const [error, setError] =
-        useState("");
-
-    const [success, setSuccess] =
-        useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
 
     useEffect(() => {
-
         if (!expiresAt) {
             return;
         }
 
         const updateTimer = () => {
-
             const remaining = Math.max(
                 0,
                 Math.floor(
                     (
-                        new Date(expiresAt).getTime()
-                        - Date.now()
+                        new Date(expiresAt).getTime() -
+                        Date.now()
                     ) / 1000
                 )
             );
@@ -54,60 +43,40 @@ export default function Register({
 
         updateTimer();
 
-        const timer =
-            setInterval(
-                updateTimer,
-                1000
-            );
+        const timer = setInterval(
+            updateTimer,
+            1000
+        );
 
-        return () => {
-            clearInterval(timer);
-        };
-
+        return () => clearInterval(timer);
     }, [expiresAt]);
 
     useEffect(() => {
-
         if (resendSeconds <= 0) {
             return;
         }
 
-        const timer =
-            setInterval(() => {
+        const timer = setInterval(() => {
+            setResendSeconds(value =>
+                Math.max(0, value - 1)
+            );
+        }, 1000);
 
-                setResendSeconds(
-                    value =>
-                        Math.max(
-                            0,
-                            value - 1
-                        )
-                );
-
-            }, 1000);
-
-        return () => {
-            clearInterval(timer);
-        };
-
+        return () => clearInterval(timer);
     }, [resendSeconds]);
 
     const formatTime = seconds => {
-
-        const minutes =
-            Math.floor(seconds / 60);
-
-        const remaining =
-            seconds % 60;
+        const minutes = Math.floor(seconds / 60);
+        const remaining = seconds % 60;
 
         return (
-            String(minutes).padStart(2, "0")
-            + ":"
-            + String(remaining).padStart(2, "0")
+            String(minutes).padStart(2, "0") +
+            ":" +
+            String(remaining).padStart(2, "0")
         );
     };
 
     const sendOtp = async event => {
-
         if (event) {
             event.preventDefault();
         }
@@ -128,50 +97,39 @@ export default function Register({
         }
 
         if (password !== confirmPassword) {
-            setError(
-                "Passwords do not match."
-            );
+            setError("Passwords do not match.");
             return;
         }
 
         setLoading(true);
 
         try {
+            const response = await fetch(
+                `${API_BASE_URL}/api/auth/register`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    credentials: "include",
+                    body: JSON.stringify({
+                        email: email.trim(),
+                        password
+                    })
+                }
+            );
 
-            const response =
-                await fetch(
-                    `${API_BASE_URL}/api/auth/register`,
-                    {
-                        method: "POST",
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-                        credentials: "include",
-                        body: JSON.stringify({
-                            email: email.trim(),
-                            password
-                        })
-                    }
-                );
-
-            const data =
-                await response.json();
+            const data = await response.json();
 
             if (!response.ok) {
-
                 throw new Error(
-                    data.message
-                    || "Unable to send OTP."
+                    data.message ||
+                    "Unable to send OTP."
                 );
             }
 
             setOtpMode(true);
-
-            setExpiresAt(
-                data.expiresAt
-            );
-
+            setExpiresAt(data.expiresAt);
             setResendSeconds(60);
 
             setSuccess(
@@ -179,72 +137,57 @@ export default function Register({
             );
 
         } catch (err) {
-
             setError(
-                err.message
-                || "Unable to send OTP."
+                err.message ||
+                "Unable to send OTP."
             );
-
         } finally {
-
             setLoading(false);
         }
     };
 
     const verifyOtp = async event => {
-
         event.preventDefault();
 
         setError("");
         setSuccess("");
 
         if (remainingSeconds <= 0) {
-
             setError(
                 "OTP has expired. Please request a new OTP."
             );
-
             return;
         }
 
         if (!/^\d{6}$/.test(otp)) {
-
-            setError(
-                "Enter the 6-digit OTP."
-            );
-
+            setError("Enter the 6-digit OTP.");
             return;
         }
 
         setLoading(true);
 
         try {
+            const response = await fetch(
+                `${API_BASE_URL}/api/auth/register/verify-otp`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    credentials: "include",
+                    body: JSON.stringify({
+                        email: email.trim(),
+                        otp
+                    })
+                }
+            );
 
-            const response =
-                await fetch(
-                    `${API_BASE_URL}/api/auth/register/verify-otp`,
-                    {
-                        method: "POST",
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-                        credentials: "include",
-                        body: JSON.stringify({
-                            email: email.trim(),
-                            otp
-                        })
-                    }
-                );
-
-            const data =
-                await response.json();
+            const data = await response.json();
 
             if (!response.ok) {
-
                 throw new Error(
-                    data.message
-                    || "Invalid OTP."
+                    data.message ||
+                    "Invalid OTP."
                 );
             }
 
@@ -253,73 +196,57 @@ export default function Register({
             );
 
             setTimeout(() => {
-
                 if (onRegisterSuccess) {
                     onRegisterSuccess();
                 }
-
             }, 800);
 
         } catch (err) {
-
             setError(
-                err.message
-                || "Verification failed."
+                err.message ||
+                "Verification failed."
             );
-
         } finally {
-
             setLoading(false);
         }
     };
 
     const resendOtp = async () => {
-
         if (resendSeconds > 0) {
             return;
         }
 
         setError("");
         setSuccess("");
-
         setLoading(true);
 
         try {
+            const response = await fetch(
+                `${API_BASE_URL}/api/auth/register`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    credentials: "include",
+                    body: JSON.stringify({
+                        email: email.trim(),
+                        password
+                    })
+                }
+            );
 
-            const response =
-                await fetch(
-                    `${API_BASE_URL}/api/auth/register`,
-                    {
-                        method: "POST",
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-                        credentials: "include",
-                        body: JSON.stringify({
-                            email: email.trim(),
-                            password
-                        })
-                    }
-                );
-
-            const data =
-                await response.json();
+            const data = await response.json();
 
             if (!response.ok) {
-
                 throw new Error(
-                    data.message
-                    || "Unable to resend OTP."
+                    data.message ||
+                    "Unable to resend OTP."
                 );
             }
 
-            setExpiresAt(
-                data.expiresAt
-            );
-
+            setExpiresAt(data.expiresAt);
             setResendSeconds(60);
-
             setOtp("");
 
             setSuccess(
@@ -327,14 +254,11 @@ export default function Register({
             );
 
         } catch (err) {
-
             setError(
-                err.message
-                || "Unable to resend OTP."
+                err.message ||
+                "Unable to resend OTP."
             );
-
         } finally {
-
             setLoading(false);
         }
     };
@@ -358,10 +282,7 @@ export default function Register({
                 </div>
 
                 <div className="coc-register-copy">
-
-                    <span>
-                        02 / CREATE ACCOUNT
-                    </span>
+                    <span>02 / CREATE ACCOUNT</span>
 
                     <h1>
                         ENTER
@@ -375,7 +296,13 @@ export default function Register({
                         Every page opens another
                         universe.
                     </p>
+                </div>
 
+                <div className="coc-register-decoration">
+                    <div className="register-orbit orbit-one"></div>
+                    <div className="register-orbit orbit-two"></div>
+                    <div className="register-orbit orbit-three"></div>
+                    <div className="register-star">✦</div>
                 </div>
 
             </div>
@@ -385,12 +312,9 @@ export default function Register({
                 {!otpMode ? (
 
                     <>
-
                         <div className="coc-register-heading">
 
-                            <span>
-                                JOIN THE UNIVERSE
-                            </span>
+                            <span>JOIN THE UNIVERSE</span>
 
                             <h2>
                                 Create
@@ -399,8 +323,8 @@ export default function Register({
                             </h2>
 
                             <p>
-                                Verify your email to
-                                enter City of Comics.
+                                Verify your email to enter
+                                City of Comics.
                             </p>
 
                         </div>
@@ -410,41 +334,33 @@ export default function Register({
                             className="coc-register-form"
                         >
 
-                            <label>
-                                EMAIL ADDRESS
-                            </label>
+                            <label>EMAIL ADDRESS</label>
 
                             <input
                                 type="email"
                                 value={email}
                                 onChange={e =>
-                                    setEmail(
-                                        e.target.value
-                                    )
+                                    setEmail(e.target.value)
                                 }
                                 autoComplete="email"
+                                placeholder="you@example.com"
                                 required
                             />
 
-                            <label>
-                                PASSWORD
-                            </label>
+                            <label>PASSWORD</label>
 
                             <input
                                 type="password"
                                 value={password}
                                 onChange={e =>
-                                    setPassword(
-                                        e.target.value
-                                    )
+                                    setPassword(e.target.value)
                                 }
                                 autoComplete="new-password"
+                                placeholder="Minimum 6 characters"
                                 required
                             />
 
-                            <label>
-                                CONFIRM PASSWORD
-                            </label>
+                            <label>CONFIRM PASSWORD</label>
 
                             <input
                                 type="password"
@@ -455,6 +371,7 @@ export default function Register({
                                     )
                                 }
                                 autoComplete="new-password"
+                                placeholder="Confirm your password"
                                 required
                             />
 
@@ -483,7 +400,6 @@ export default function Register({
                         </form>
 
                         <div className="coc-register-login">
-
                             <span>
                                 Already have an account?
                             </span>
@@ -494,20 +410,15 @@ export default function Register({
                             >
                                 SIGN IN
                             </button>
-
                         </div>
-
                     </>
 
                 ) : (
 
                     <>
-
                         <div className="coc-register-heading">
 
-                            <span>
-                                EMAIL VERIFICATION
-                            </span>
+                            <span>EMAIL VERIFICATION</span>
 
                             <h2>
                                 Verify
@@ -519,9 +430,7 @@ export default function Register({
                                 We sent a 6-digit
                                 verification code to
                                 <br />
-                                <strong>
-                                    {email}
-                                </strong>
+                                <strong>{email}</strong>
                             </p>
 
                         </div>
@@ -544,14 +453,8 @@ export default function Register({
                                 onChange={e =>
                                     setOtp(
                                         e.target.value
-                                            .replace(
-                                                /\D/g,
-                                                ""
-                                            )
-                                            .slice(
-                                                0,
-                                                6
-                                            )
+                                            .replace(/\D/g, "")
+                                            .slice(0, 6)
                                     )
                                 }
                                 placeholder="000000"
@@ -560,7 +463,6 @@ export default function Register({
                             />
 
                             <div className="coc-otp-timer">
-
                                 {remainingSeconds > 0 ? (
                                     <>
                                         OTP expires in{" "}
@@ -575,7 +477,6 @@ export default function Register({
                                         OTP EXPIRED
                                     </strong>
                                 )}
-
                             </div>
 
                             {error && (
@@ -594,8 +495,8 @@ export default function Register({
                                 type="submit"
                                 className="coc-register-submit"
                                 disabled={
-                                    loading
-                                    || remainingSeconds <= 0
+                                    loading ||
+                                    remainingSeconds <= 0
                                 }
                             >
                                 {loading
@@ -608,7 +509,6 @@ export default function Register({
                         <div className="coc-resend">
 
                             {resendSeconds > 0 ? (
-
                                 <span>
                                     Resend OTP in{" "}
                                     <strong>
@@ -617,9 +517,7 @@ export default function Register({
                                         )}
                                     </strong>
                                 </span>
-
                             ) : (
-
                                 <button
                                     type="button"
                                     onClick={resendOtp}
@@ -627,13 +525,10 @@ export default function Register({
                                 >
                                     RESEND OTP
                                 </button>
-
                             )}
 
                         </div>
-
                     </>
-
                 )}
 
             </div>
