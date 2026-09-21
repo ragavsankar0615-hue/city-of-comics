@@ -13,14 +13,15 @@ public class WebConfig {
 
     @Bean
     public CorsFilter corsFilter() {
-        CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of(
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(List.of(
                 "http://localhost:5173",
                 "https://city-of-comics.vercel.app"
         ));
 
-        config.setAllowedMethods(List.of(
+        configuration.setAllowedMethods(List.of(
                 "GET",
                 "POST",
                 "PUT",
@@ -28,14 +29,16 @@ public class WebConfig {
                 "OPTIONS"
         ));
 
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
-        config.setMaxAge(3600L);
+        configuration.setAllowedHeaders(List.of("*"));
+
+        configuration.setAllowCredentials(true);
+
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
 
-        source.registerCorsConfiguration("/**", config);
+        source.registerCorsConfiguration("/**", configuration);
 
         return new CorsFilter(source);
     }
