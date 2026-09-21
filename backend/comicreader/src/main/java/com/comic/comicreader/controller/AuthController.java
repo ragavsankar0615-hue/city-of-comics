@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,6 +23,13 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/auth")
+@CrossOrigin(
+        origins = {
+                "http://localhost:5173",
+                "https://city-of-comics.vercel.app"
+        },
+        allowCredentials = "true"
+)
 public class AuthController {
 
     private final AuthService authService;
@@ -30,7 +38,6 @@ public class AuthController {
     public AuthController(
             AuthService authService,
             EmailVerificationService emailVerificationService) {
-
         this.authService = authService;
         this.emailVerificationService = emailVerificationService;
     }
@@ -40,7 +47,6 @@ public class AuthController {
             @Valid @RequestBody RegisterRequest request) {
 
         try {
-
             emailVerificationService.startRegistration(
                     request.getEmail(),
                     request.getPassword()
@@ -60,14 +66,16 @@ public class AuthController {
 
         } catch (RuntimeException e) {
 
-            return ResponseEntity
-                    .badRequest()
-                    .body(
-                            Map.of(
-                                    "message",
-                                    e.getMessage()
-                            )
-                    );
+            String message = e.getMessage();
+
+            if (message == null || message.isBlank()) {
+                message =
+                        "Unable to send OTP. Please try again.";
+            }
+
+            return ResponseEntity.badRequest().body(
+                    Map.of("message", message)
+            );
         }
     }
 
@@ -76,54 +84,48 @@ public class AuthController {
             @RequestBody Map<String, String> request) {
 
         try {
-
             String email = request.get("email");
             String otp = request.get("otp");
 
-            if (email == null
-                    || email.isBlank()
+            if (email == null || email.isBlank()
                     || otp == null
                     || !otp.matches("\\d{6}")) {
 
-                return ResponseEntity
-                        .badRequest()
-                        .body(
-                                Map.of(
-                                        "message",
-                                        "Enter a valid 6-digit OTP."
-                                )
-                        );
+                return ResponseEntity.badRequest().body(
+                        Map.of(
+                                "message",
+                                "Enter a valid 6-digit OTP."
+                        )
+                );
             }
 
             User user =
-                    emailVerificationService.verifyRegistration(
-                            email,
-                            otp
-                    );
+                    emailVerificationService
+                            .verifyRegistration(email, otp);
 
-            return ResponseEntity
-                    .status(HttpStatus.CREATED)
-                    .body(
-                            Map.of(
-                                    "message",
-                                    "Registration successful.",
-                                    "userId",
-                                    user.getId(),
-                                    "email",
-                                    user.getEmail()
-                            )
-                    );
+            return ResponseEntity.status(HttpStatus.CREATED).body(
+                    Map.of(
+                            "message",
+                            "Registration successful.",
+                            "userId",
+                            user.getId(),
+                            "email",
+                            user.getEmail()
+                    )
+            );
 
         } catch (RuntimeException e) {
 
-            return ResponseEntity
-                    .badRequest()
-                    .body(
-                            Map.of(
-                                    "message",
-                                    e.getMessage()
-                            )
-                    );
+            String message = e.getMessage();
+
+            if (message == null || message.isBlank()) {
+                message =
+                        "OTP verification failed. Please try again.";
+            }
+
+            return ResponseEntity.badRequest().body(
+                    Map.of("message", message)
+            );
         }
     }
 
@@ -132,19 +134,15 @@ public class AuthController {
             @RequestBody Map<String, String> request) {
 
         try {
-
             String email = request.get("email");
 
             if (email == null || email.isBlank()) {
-
-                return ResponseEntity
-                        .badRequest()
-                        .body(
-                                Map.of(
-                                        "message",
-                                        "Email is required."
-                                )
-                        );
+                return ResponseEntity.badRequest().body(
+                        Map.of(
+                                "message",
+                                "Email is required."
+                        )
+                );
             }
 
             emailVerificationService.resendOtp(email);
@@ -163,14 +161,16 @@ public class AuthController {
 
         } catch (RuntimeException e) {
 
-            return ResponseEntity
-                    .badRequest()
-                    .body(
-                            Map.of(
-                                    "message",
-                                    e.getMessage()
-                            )
-                    );
+            String message = e.getMessage();
+
+            if (message == null || message.isBlank()) {
+                message =
+                        "Unable to resend OTP. Please try again.";
+            }
+
+            return ResponseEntity.badRequest().body(
+                    Map.of("message", message)
+            );
         }
     }
 
@@ -180,7 +180,6 @@ public class AuthController {
             HttpSession session) {
 
         try {
-
             User user = authService.login(request);
 
             session.setAttribute(
@@ -213,12 +212,19 @@ public class AuthController {
 
         } catch (RuntimeException e) {
 
+            String message = e.getMessage();
+
+            if (message == null || message.isBlank()) {
+                message =
+                        "Invalid email or password.";
+            }
+
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
                     .body(
                             Map.of(
                                     "message",
-                                    e.getMessage()
+                                    message
                             )
                     );
         }
