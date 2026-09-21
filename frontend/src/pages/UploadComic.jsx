@@ -1,7 +1,8 @@
 import React, { useState } from "react";
+import { API_BASE_URL } from "../config";
 import "./UploadComic.css";
 
-function UploadComic({ onBack, onSuccess }) {
+function UploadComic({ onBack, onUploaded }) {
 
     const [title, setTitle] = useState("");
     const [author, setAuthor] = useState("");
@@ -81,9 +82,10 @@ function UploadComic({ onBack, onSuccess }) {
             });
 
             const response = await fetch(
-                "http://localhost:8080/api/comics/upload",
+                `${API_BASE_URL}/api/comics/upload`,
                 {
                     method: "POST",
+                    credentials: "include",
                     body: formData
                 }
             );
@@ -128,8 +130,8 @@ function UploadComic({ onBack, onSuccess }) {
             );
 
             // Refresh comic collection
-            if (onSuccess) {
-                onSuccess();
+            if (onUploaded) {
+                onUploaded();
             }
 
         } catch (error) {
