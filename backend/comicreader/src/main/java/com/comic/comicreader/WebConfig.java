@@ -16,34 +16,45 @@ public class WebConfig {
     @Bean
     public FilterRegistrationBean<CorsFilter> corsFilter() {
 
-        CorsConfiguration configuration = new CorsConfiguration();
+        CorsConfiguration config = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of(
+        config.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
-                "https://city-of-comics.vercel.app"
+                "https://city-of-comics.vercel.app",
+                "https://*.vercel.app"
         ));
 
-        configuration.setAllowedMethods(List.of(
+        config.setAllowedMethods(List.of(
                 "GET",
                 "POST",
                 "PUT",
                 "DELETE",
-                "OPTIONS"
+                "OPTIONS",
+                "PATCH"
         ));
 
-        configuration.setAllowedHeaders(List.of("*"));
+        config.setAllowedHeaders(List.of(
+                "*"
+        ));
 
-        configuration.setAllowCredentials(true);
+        config.setExposedHeaders(List.of(
+                "Content-Type",
+                "Content-Length"
+        ));
 
-        configuration.setMaxAge(3600L);
+        config.setAllowCredentials(true);
+
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
 
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/**", config);
+
+        CorsFilter corsFilter = new CorsFilter(source);
 
         FilterRegistrationBean<CorsFilter> bean =
-                new FilterRegistrationBean<>(new CorsFilter(source));
+                new FilterRegistrationBean<>(corsFilter);
 
         bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
 
