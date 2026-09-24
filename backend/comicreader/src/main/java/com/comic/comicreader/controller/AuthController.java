@@ -5,7 +5,6 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,13 +22,6 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(
-        origins = {
-                "http://localhost:5173",
-                "https://city-of-comics.vercel.app"
-        },
-        allowCredentials = "true"
-)
 public class AuthController {
 
     private final AuthService authService;
@@ -38,8 +30,10 @@ public class AuthController {
     public AuthController(
             AuthService authService,
             EmailVerificationService emailVerificationService) {
+
         this.authService = authService;
-        this.emailVerificationService = emailVerificationService;
+        this.emailVerificationService =
+                emailVerificationService;
     }
 
     @PostMapping("/register")
@@ -47,13 +41,13 @@ public class AuthController {
             @Valid @RequestBody RegisterRequest request) {
 
         try {
-            emailVerificationService.startRegistration(
-                    request.getEmail(),
-                    request.getPassword()
-            );
 
             Instant expiresAt =
-                    Instant.now().plusSeconds(10 * 60);
+                    emailVerificationService
+                            .sendRegistrationOtp(
+                                    request.getEmail(),
+                                    request.getPassword()
+                            );
 
             return ResponseEntity.ok(
                     Map.of(
@@ -66,16 +60,14 @@ public class AuthController {
 
         } catch (RuntimeException e) {
 
-            String message = e.getMessage();
-
-            if (message == null || message.isBlank()) {
-                message =
-                        "Unable to send OTP. Please try again.";
-            }
-
-            return ResponseEntity.badRequest().body(
-                    Map.of("message", message)
-            );
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            Map.of(
+                                    "message",
+                                    safeMessage(e, "Unable to process request.")
+                            )
+                    );
         }
     }
 
@@ -84,94 +76,65 @@ public class AuthController {
             @RequestBody Map<String, String> request) {
 
         try {
-            String email = request.get("email");
-            String otp = request.get("otp");
 
-            if (email == null || email.isBlank()
+            String email =
+                    request.get("email");
+
+            String otp =
+                    request.get("otp");
+
+            if (email == null
+                    || email.isBlank()
                     || otp == null
                     || !otp.matches("\\d{6}")) {
 
-                return ResponseEntity.badRequest().body(
-                        Map.of(
-                                "message",
-                                "Enter a valid 6-digit OTP."
-                        )
-                );
+                return ResponseEntity
+                        .badRequest()
+                        .body(
+                                Map.of(
+                                        "message",
+                                        "Enter a valid 6-digit OTP."
+                                )
+                        );
             }
 
             User user =
                     emailVerificationService
-                            .verifyRegistration(email, otp);
+                            .verifyRegistrationOtp(
+                                    email,
+                                    otp
+                            );
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(
-                    Map.of(
-                            "message",
-                            "Registration successful.",
-                            "userId",
-                            user.getId(),
-                            "email",
-                            user.getEmail()
-                    )
-            );
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(
+                            Map.of(
+                                    "message",
+                                    "Registration successful.",
+                                    "userId",
+                                    user.getId(),
+                                    "email",
+                                    user.getEmail()
+                            )
+                    );
 
         } catch (RuntimeException e) {
 
-            String message = e.getMessage();
-
-            if (message == null || message.isBlank()) {
-                message =
-                        "OTP verification failed. Please try again.";
-            }
-
-            return ResponseEntity.badRequest().body(
-                    Map.of("message", message)
-            );
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            Map.of(
+                                    "message",
+                                    safeMessage(e, "Unable to process request.")
+                            )
+                    );
         }
     }
 
-    @PostMapping("/register/resend-otp")
-    public ResponseEntity<?> resendOtp(
-            @RequestBody Map<String, String> request) {
-
-        try {
-            String email = request.get("email");
-
-            if (email == null || email.isBlank()) {
-                return ResponseEntity.badRequest().body(
-                        Map.of(
-                                "message",
-                                "Email is required."
-                        )
-                );
-            }
-
-            emailVerificationService.resendOtp(email);
-
-            Instant expiresAt =
-                    Instant.now().plusSeconds(10 * 60);
-
-            return ResponseEntity.ok(
-                    Map.of(
-                            "message",
-                            "A new OTP has been sent.",
-                            "expiresAt",
-                            expiresAt
-                    )
-            );
-
-        } catch (RuntimeException e) {
-
-            String message = e.getMessage();
-
-            if (message == null || message.isBlank()) {
-                message =
-                        "Unable to resend OTP. Please try again.";
-            }
-
-            return ResponseEntity.badRequest().body(
-                    Map.of("message", message)
-            );
-        }
+    private String safeMessage(RuntimeException e, String fallback) {
+        return e.getMessage() == null || e.getMessage().isBlank()
+                ? fallback
+                : e.getMessage();
     }
 
     @PostMapping("/login")
@@ -180,7 +143,9 @@ public class AuthController {
             HttpSession session) {
 
         try {
-            User user = authService.login(request);
+
+            User user =
+                    authService.login(request);
 
             session.setAttribute(
                     "userId",
@@ -212,19 +177,12 @@ public class AuthController {
 
         } catch (RuntimeException e) {
 
-            String message = e.getMessage();
-
-            if (message == null || message.isBlank()) {
-                message =
-                        "Invalid email or password.";
-            }
-
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
                     .body(
                             Map.of(
                                     "message",
-                                    message
+                                    safeMessage(e, "Unable to process request.")
                             )
                     );
         }

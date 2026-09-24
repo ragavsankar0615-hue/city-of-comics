@@ -1,6 +1,6 @@
 package com.comic.comicreader.model;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -20,23 +20,23 @@ public class EmailVerificationCode {
     @Column(nullable = false, unique = true, length = 255)
     private String email;
 
-    @Column(nullable = false, length = 255)
+    @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
-    @Column(nullable = false, length = 128)
+    @Column(name = "otp_hash", nullable = false, length = 255)
     private String otpHash;
 
-    @Column(nullable = false)
-    private LocalDateTime expiresAt;
+    @Column(name = "expires_at", nullable = false)
+    private Instant expiresAt;
 
     @Column(nullable = false)
-    private Integer attempts = 0;
+    private int attempts;
 
-    @Column(nullable = false)
-    private LocalDateTime lastSentAt;
+    @Column(name = "last_sent_at", nullable = false)
+    private Instant lastSentAt;
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
     public EmailVerificationCode() {
     }
@@ -69,35 +69,35 @@ public class EmailVerificationCode {
         this.otpHash = otpHash;
     }
 
-    public LocalDateTime getExpiresAt() {
+    public Instant getExpiresAt() {
         return expiresAt;
     }
 
-    public void setExpiresAt(LocalDateTime expiresAt) {
+    public void setExpiresAt(Instant expiresAt) {
         this.expiresAt = expiresAt;
     }
 
-    public Integer getAttempts() {
+    public int getAttempts() {
         return attempts;
     }
 
-    public void setAttempts(Integer attempts) {
+    public void setAttempts(int attempts) {
         this.attempts = attempts;
     }
 
-    public LocalDateTime getLastSentAt() {
+    public Instant getLastSentAt() {
         return lastSentAt;
     }
 
-    public void setLastSentAt(LocalDateTime lastSentAt) {
+    public void setLastSentAt(Instant lastSentAt) {
         this.lastSentAt = lastSentAt;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 }

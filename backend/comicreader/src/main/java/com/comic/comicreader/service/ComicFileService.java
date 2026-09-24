@@ -1,110 +1,299 @@
 package com.comic.comicreader.service;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Comparator;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class ComicFileService {
 
-    private final Path uploadDir;
+    @Value("${supabase.url:}")
+    private String supabaseUrl;
 
-    public ComicFileService(
-            @Value("${comic.upload-dir:uploads}")
-            String uploadDirectory) {
+    @Value("${supabase.service-role-key:}")
+    private String serviceRoleKey;
 
-        this.uploadDir = Paths
-                .get(uploadDirectory)
-                .toAbsolutePath()
-                .normalize();
+    @Value("${supabase.bucket:comics}")
+    private String bucket;
+
+    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public boolean isCloudStorageEnabled() {
+        return supabaseUrl != null
+                && !supabaseUrl.isBlank()
+                && serviceRoleKey != null
+                && !serviceRoleKey.isBlank();
     }
 
-    public Path createComicFolder(Long comicId) throws IOException {
-        Path comicFolder = uploadDir.resolve(String.valueOf(comicId));
-        Files.createDirectories(comicFolder);
-        return comicFolder;
-    }
+    public SignedUpload createSignedUpload(
+            Long comicId,
+            String originalFilename,
+            String contentType) {
 
-    public String saveImage(Long comicId, MultipartFile file, String prefix)
-            throws IOException {
-
-        if (file == null || file.isEmpty()) {
-            throw new IOException("Uploaded image is empty.");
+        if (!isCloudStorageEnabled()) {
+            throw new RuntimeException("Supabase storage is not configured.");
         }
 
-        String contentType = file.getContentType();
-        if (contentType == null || !contentType.toLowerCase().startsWith("image/")) {
-            throw new IOException("Only image files are allowed.");
-        }
+        String extension = getExtension(originalFilename);
 
-        Path comicFolder = createComicFolder(comicId);
-        String extension = getExtension(file.getOriginalFilename(), contentType);
-        String safePrefix = prefix.replaceAll("[^a-zA-Z0-9_-]", "_");
-        String filename = safePrefix + "-" + UUID.randomUUID() + extension;
-        Path destination = comicFolder.resolve(filename).normalize();
+        String path = "comics/"
+                + comicId
+                + "/"
+                + UUID.randomUUID()
+                + extension;
 
-        if (!destination.getParent().equals(comicFolder)) {
-            throw new IOException("Invalid upload filename.");
-        }
+        String encodedPath = encodePath(path);
 
-        file.transferTo(destination);
-        return "/uploads/" + comicId + "/" + filename;
-    }
+        String endpoint = supabaseUrl
+                + "/storage/v1/object/upload/sign/"
+                + encodeSegment(bucket)
+                + "/"
+                + encodedPath;
 
-    private String getExtension(String originalFilename, String contentType) {
-        if (originalFilename != null) {
-            int dot = originalFilename.lastIndexOf('.');
-            if (dot >= 0 && dot < originalFilename.length() - 1) {
-                String extension = originalFilename.substring(dot).toLowerCase();
-                if (extension.matches("\\.(jpg|jpeg|png|gif|webp)")) {
-                    return extension;
-                }
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(endpoint))
+                .header("Authorization", "Bearer " + serviceRoleKey)
+                .header("apikey", serviceRoleKey)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("{}"))
+                .build();
+
+        try {
+            HttpResponse<String> response =
+                    httpClient.send(
+                            request,
+                            HttpResponse.BodyHandlers.ofString()
+                    );
+
+            if (response.statusCode() < 200 ||
+                    response.statusCode() >= 300) {
+
+                throw new RuntimeException(
+                        "Unable to create Supabase upload URL."
+                );
             }
-        }
 
-        return switch (contentType.toLowerCase()) {
-            case "image/jpeg" -> ".jpg";
-            case "image/png" -> ".png";
-            case "image/gif" -> ".gif";
-            case "image/webp" -> ".webp";
-            default -> ".img";
-        };
+            JsonNode node = objectMapper.readTree(response.body());
+
+            String signedPath = node.path("url").asText();
+
+            if (signedPath == null || signedPath.isBlank()) {
+                throw new RuntimeException(
+                        "Supabase did not return a signed upload URL."
+                );
+            }
+
+            String signedUrl;
+
+            if (signedPath.startsWith("http://")
+                    || signedPath.startsWith("https://")) {
+                signedUrl = signedPath;
+            } else {
+                signedUrl = supabaseUrl
+                        + "/storage/v1"
+                        + signedPath;
+            }
+
+            return new SignedUpload(
+                    path,
+                    signedUrl,
+                    publicUrl(path)
+            );
+
+        } catch (InterruptedException e) {
+
+            Thread.currentThread().interrupt();
+
+            throw new RuntimeException(
+                    "Unable to create Supabase upload URL.",
+                    e
+            );
+
+        } catch (IOException e) {
+
+            throw new RuntimeException(
+                    "Unable to communicate with Supabase.",
+                    e
+            );
+        }
     }
 
-    public void deleteComicFolder(Long comicId) throws IOException {
-        Path comicFolder = uploadDir
-                .resolve(String.valueOf(comicId))
-                .normalize();
+    public String publicUrl(String path) {
 
-        if (!Files.exists(comicFolder)) {
+        return supabaseUrl
+                + "/storage/v1/object/public/"
+                + encodeSegment(bucket)
+                + "/"
+                + encodePath(path);
+    }
+
+    public boolean isOwnedPath(Long comicId, String path) {
+
+        if (comicId == null || path == null) {
+            return false;
+        }
+
+        String prefix = "comics/" + comicId + "/";
+
+        return path.startsWith(prefix)
+                && !path.contains("..");
+    }
+
+    public void deleteObjects(List<String> paths) {
+
+        if (!isCloudStorageEnabled()
+                || paths == null
+                || paths.isEmpty()) {
             return;
         }
 
-        if (!comicFolder.getParent().equals(uploadDir)) {
-            throw new IOException("Invalid comic upload path.");
+        List<String> validPaths = new ArrayList<>();
+
+        for (String path : paths) {
+            if (path != null && !path.isBlank()) {
+                validPaths.add(path);
+            }
         }
 
-        try (Stream<Path> paths = Files.walk(comicFolder)) {
-            paths.sorted(Comparator.reverseOrder()).forEach(path -> {
-                try {
-                    Files.deleteIfExists(path);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        } catch (RuntimeException e) {
-            if (e.getCause() instanceof IOException ioException) {
-                throw ioException;
-            }
-            throw e;
+        if (validPaths.isEmpty()) {
+            return;
         }
+
+        try {
+
+            String json = objectMapper.writeValueAsString(
+                    new DeleteRequest(validPaths)
+            );
+
+            String endpoint = supabaseUrl
+                    + "/storage/v1/object/"
+                    + encodeSegment(bucket);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(endpoint))
+                    .header("Authorization", "Bearer " + serviceRoleKey)
+                    .header("apikey", serviceRoleKey)
+                    .header("Content-Type", "application/json")
+                    .method(
+                            "DELETE",
+                            HttpRequest.BodyPublishers.ofString(json)
+                    )
+                    .build();
+
+            HttpResponse<String> response =
+                    httpClient.send(
+                            request,
+                            HttpResponse.BodyHandlers.ofString()
+                    );
+
+            if (response.statusCode() < 200
+                    || response.statusCode() >= 300) {
+
+                throw new RuntimeException(
+                        "Unable to delete Supabase files."
+                );
+            }
+
+        } catch (InterruptedException e) {
+
+            Thread.currentThread().interrupt();
+
+            throw new RuntimeException(
+                    "Unable to delete Supabase files.",
+                    e
+            );
+
+        } catch (Exception e) {
+
+            throw new RuntimeException(
+                    "Unable to delete Supabase files.",
+                    e
+            );
+        }
+    }
+
+    private String getExtension(String filename) {
+
+        if (filename == null || filename.isBlank()) {
+            throw new RuntimeException("Invalid filename.");
+        }
+
+        String lower = filename.toLowerCase();
+
+        if (lower.endsWith(".jpg")) {
+            return ".jpg";
+        }
+
+        if (lower.endsWith(".jpeg")) {
+            return ".jpeg";
+        }
+
+        if (lower.endsWith(".png")) {
+            return ".png";
+        }
+
+        if (lower.endsWith(".gif")) {
+            return ".gif";
+        }
+
+        if (lower.endsWith(".webp")) {
+            return ".webp";
+        }
+
+        throw new RuntimeException(
+                "Only JPG, JPEG, PNG, GIF and WEBP images are allowed."
+        );
+    }
+
+    private String encodePath(String path) {
+
+        String[] parts = path.split("/");
+
+        StringBuilder result = new StringBuilder();
+
+        for (int i = 0; i < parts.length; i++) {
+
+            if (i > 0) {
+                result.append("/");
+            }
+
+            result.append(encodeSegment(parts[i]));
+        }
+
+        return result.toString();
+    }
+
+    private String encodeSegment(String value) {
+
+        return URLEncoder
+                .encode(value, StandardCharsets.UTF_8)
+                .replace("+", "%20")
+                .replace("%2F", "/");
+    }
+
+    public record SignedUpload(
+            String path,
+            String signedUrl,
+            String publicUrl
+    ) {
+    }
+
+    private record DeleteRequest(
+            List<String> prefixes
+    ) {
     }
 }

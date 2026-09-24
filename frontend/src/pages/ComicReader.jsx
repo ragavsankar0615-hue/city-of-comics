@@ -1,4 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+    useCallback,
+    useEffect,
+    useRef,
+    useState
+} from "react";
 import "./ComicReader.css";
 import { API_BASE_URL } from "../config";
 
@@ -13,15 +18,22 @@ export default function ComicReader({
     const [comics, setComics] = useState([]);
     const [filteredComics, setFilteredComics] = useState([]);
     const [search, setSearch] = useState("");
+
     const [selectedComic, setSelectedComic] = useState(null);
     const [pages, setPages] = useState([]);
     const [currentPage, setCurrentPage] = useState(0);
+
     const [loading, setLoading] = useState(true);
     const [loadingPages, setLoadingPages] = useState(false);
+    const [loadingImage, setLoadingImage] = useState(false);
+
     const [error, setError] = useState("");
     const [isFullscreen, setIsFullscreen] = useState(false);
 
     const readerRef = useRef(null);
+
+    const preloadedImagesRef = useRef(new Set());
+    const loadingImagesRef = useRef(new Set());
 
     useEffect(() => {
         loadComics();
@@ -36,55 +48,384 @@ export default function ComicReader({
         }
 
         setFilteredComics(
-            comics.filter(
-                comic =>
-                    comic.title?.toLowerCase().includes(value) ||
-                    comic.author?.toLowerCase().includes(value)
+            comics.filter(comic =>
+                comic.title
+                    ?.toLowerCase()
+                    .includes(value) ||
+                comic.author
+                    ?.toLowerCase()
+                    .includes(value)
             )
         );
     }, [search, comics]);
 
-    useEffect(() => {
-        const handleKeyDown = event => {
-            if (!selectedComic) return;
+    const getImageUrl = useCallback(url => {
+        if (!url) {
+            return "";
+        }
+
+        if (
+            url.startsWith("http://") ||
+            url.startsWith("https://")
+        ) {
+            return url;
+        }
+
+        return `${API_BASE_URL}${url}`;
+    }, []);
+
+    const preloadPage = useCallback(
+        page => {
+            if (!page?.imageUrl) {
+                return;
+            }
+
+            const imageUrl = getImageUrl(page.imageUrl);
+
+            if (!imageUrl) {
+                return;
+            }
 
             if (
-                event.target.tagName === "INPUT" ||
-                event.target.tagName === "TEXTAREA"
+                preloadedImagesRef.current.has(
+                    imageUrl
+                )
             ) {
                 return;
             }
 
-            if (event.key === "ArrowRight") {
+            if (
+                loadingImagesRef.current.has(
+                    imageUrl
+                )
+            ) {
+                return;
+            }
+
+            loadingImagesRef.current.add(
+                imageUrl
+            );
+
+            const image = new Image();
+
+            image.decoding = "async";
+
+            image.onload = () => {
+                loadingImagesRef.current.delete(
+                    imageUrl
+                );
+
+                preloadedImagesRef.current.add(
+                    imageUrl
+                );
+            };
+
+            image.onerror = () => {
+                loadingImagesRef.current.delete(
+                    imageUrl
+                );
+            };
+
+            image.src = imageUrl;
+        },
+        [getImageUrl]
+    );
+
+    const preloadAroundPage = useCallback(
+        pageIndex => {
+            if (!pages.length) {
+                return;
+            }
+
+            const indexes = [
+                pageIndex - 1,
+                pageIndex + 1,
+                pageIndex + 2
+            ];
+
+            indexes.forEach(index => {
+                if (
+                    index >= 0 &&
+                    index < pages.length
+                ) {
+                    preloadPage(pages[index]);
+                }
+            });
+        },
+        [pages, preloadPage]
+    );
+
+    const loadComics = async () => {
+        try {
+            setLoading(true);
+            setError("");
+
+            const response = await fetch(
+                `${API_BASE_URL}/api/comics`,
+                {
+                    method: "GET",
+                    cache: "default"
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(
+                    "Unable to load comics"
+                );
+            }
+
+            const data = await response.json();
+
+            setComics(
+                Array.isArray(data)
+                    ? data
+                    : []
+            );
+        } catch (err) {
+            console.error(err);
+            setError(
+                "Unable to connect to the comic library."
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const openComic = async comic => {
+        try {
+            setSelectedComic(comic);
+            setPages([]);
+            setCurrentPage(0);
+
+            setLoadingPages(true);
+            setLoadingImage(true);
+            setError("");
+
+            preloadedImagesRef.current.clear();
+            loadingImagesRef.current.clear();
+
+            const response = await fetch(
+                `${API_BASE_URL}/api/comics/${comic.id}/pages`,
+                {
+                    method: "GET",
+                    cache: "default"
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(
+                    "Unable to load comic pages"
+                );
+            }
+
+            const data = await response.json();
+
+            const comicPages =
+                Array.isArray(data)
+                    ? data
+                    : [];
+
+            setPages(comicPages);
+            setLoadingPages(false);
+
+            if (comicPages.length > 0) {
+                preloadPage(comicPages[0]);
+
+                if (comicPages[1]) {
+                    preloadPage(
+                        comicPages[1]
+                    );
+                }
+
+                if (comicPages[2]) {
+                    preloadPage(
+                        comicPages[2]
+                    );
+                }
+            } else {
+                setLoadingImage(false);
+            }
+        } catch (err) {
+            console.error(err);
+
+            setError(
+                "Unable to load comic pages."
+            );
+
+            setLoadingPages(false);
+            setLoadingImage(false);
+        }
+    };
+
+    const closeReader = () => {
+        setSelectedComic(null);
+        setPages([]);
+        setCurrentPage(0);
+        setLoadingImage(false);
+
+        preloadedImagesRef.current.clear();
+        loadingImagesRef.current.clear();
+
+        if (document.fullscreenElement) {
+            document
+                .exitFullscreen()
+                .catch(() => {});
+        }
+    };
+
+    const nextPage = useCallback(() => {
+        setCurrentPage(current => {
+            if (
+                current >=
+                pages.length - 1
+            ) {
+                return current;
+            }
+
+            const next = current + 1;
+
+            if (pages[next]) {
+                preloadPage(
+                    pages[next]
+                );
+            }
+
+            if (pages[next + 1]) {
+                preloadPage(
+                    pages[next + 1]
+                );
+            }
+
+            if (pages[next + 2]) {
+                preloadPage(
+                    pages[next + 2]
+                );
+            }
+
+            return next;
+        });
+    }, [pages, preloadPage]);
+
+    const previousPage = useCallback(() => {
+        setCurrentPage(current => {
+            if (current <= 0) {
+                return current;
+            }
+
+            const previous =
+                current - 1;
+
+            if (pages[previous]) {
+                preloadPage(
+                    pages[previous]
+                );
+            }
+
+            if (pages[previous - 1]) {
+                preloadPage(
+                    pages[previous - 1]
+                );
+            }
+
+            return previous;
+        });
+    }, [pages, preloadPage]);
+
+    const toggleFullscreen = useCallback(
+        async () => {
+            try {
+                if (
+                    !document.fullscreenElement
+                ) {
+                    if (
+                        readerRef.current
+                    ) {
+                        await readerRef.current.requestFullscreen();
+                    }
+                } else {
+                    await document.exitFullscreen();
+                }
+            } catch (err) {
+                console.error(
+                    "Fullscreen error:",
+                    err
+                );
+            }
+        },
+        []
+    );
+
+    useEffect(() => {
+        const handleKeyDown = event => {
+            if (!selectedComic) {
+                return;
+            }
+
+            if (
+                event.target.tagName ===
+                    "INPUT" ||
+                event.target.tagName ===
+                    "TEXTAREA"
+            ) {
+                return;
+            }
+
+            if (
+                event.key ===
+                "ArrowRight"
+            ) {
                 event.preventDefault();
                 nextPage();
             }
 
-            if (event.key === "ArrowLeft") {
+            if (
+                event.key ===
+                "ArrowLeft"
+            ) {
                 event.preventDefault();
                 previousPage();
             }
 
-            if (event.key.toLowerCase() === "f") {
+            if (
+                event.key.toLowerCase() ===
+                "f"
+            ) {
                 event.preventDefault();
                 toggleFullscreen();
             }
 
-            if (event.key === "Escape" && document.fullscreenElement) {
+            if (
+                event.key === "Escape" &&
+                document.fullscreenElement
+            ) {
                 document.exitFullscreen();
             }
         };
 
-        window.addEventListener("keydown", handleKeyDown);
+        window.addEventListener(
+            "keydown",
+            handleKeyDown
+        );
 
         return () => {
-            window.removeEventListener("keydown", handleKeyDown);
+            window.removeEventListener(
+                "keydown",
+                handleKeyDown
+            );
         };
-    });
+    }, [
+        selectedComic,
+        nextPage,
+        previousPage,
+        toggleFullscreen
+    ]);
 
     useEffect(() => {
         const fullscreenChanged = () => {
-            setIsFullscreen(document.fullscreenElement !== null);
+            setIsFullscreen(
+                document.fullscreenElement !==
+                    null
+            );
         };
 
         document.addEventListener(
@@ -100,168 +441,108 @@ export default function ComicReader({
         };
     }, []);
 
-    const loadComics = async () => {
-        try {
-            setLoading(true);
-            setError("");
-
-            const response = await fetch(
-                `${API_BASE_URL}/api/comics`
-            );
-
-            if (!response.ok) {
-                throw new Error("Unable to load comics");
-            }
-
-            const data = await response.json();
-
-            setComics(Array.isArray(data) ? data : []);
-        } catch (err) {
-            console.error(err);
-            setError("Unable to connect to the comic library.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const getImageUrl = url => {
-        if (!url) return "";
-
+    useEffect(() => {
         if (
-            url.startsWith("http://") ||
-            url.startsWith("https://")
+            selectedComic &&
+            pages.length > 0
         ) {
-            return url;
-        }
-
-        return `${API_BASE_URL}${url}`;
-    };
-
-    const openComic = async comic => {
-        try {
-            setSelectedComic(comic);
-            setPages([]);
-            setCurrentPage(0);
-            setLoadingPages(true);
-            setError("");
-
-            const response = await fetch(
-                `${API_BASE_URL}/api/comics/${comic.id}/pages`
+            preloadAroundPage(
+                currentPage
             );
-
-            if (!response.ok) {
-                throw new Error("Unable to load comic pages");
-            }
-
-            const data = await response.json();
-
-            setPages(Array.isArray(data) ? data : []);
-        } catch (err) {
-            console.error(err);
-            setError("Unable to load comic pages.");
-        } finally {
-            setLoadingPages(false);
         }
-    };
-
-    const closeReader = () => {
-        setSelectedComic(null);
-        setPages([]);
-        setCurrentPage(0);
-
-        if (document.fullscreenElement) {
-            document.exitFullscreen().catch(() => {});
-        }
-    };
-
-    const nextPage = () => {
-        setCurrentPage(current => {
-            if (current < pages.length - 1) {
-                return current + 1;
-            }
-
-            return current;
-        });
-    };
-
-    const previousPage = () => {
-        setCurrentPage(current => {
-            if (current > 0) {
-                return current - 1;
-            }
-
-            return current;
-        });
-    };
-
-    const toggleFullscreen = async () => {
-        try {
-            if (!document.fullscreenElement) {
-                if (readerRef.current) {
-                    await readerRef.current.requestFullscreen();
-                }
-            } else {
-                await document.exitFullscreen();
-            }
-        } catch (err) {
-            console.error("Fullscreen error:", err);
-        }
-    };
+    }, [
+        selectedComic,
+        pages,
+        currentPage,
+        preloadAroundPage
+    ]);
 
     const handleReaderClick = event => {
-        if (!pages.length) return;
+        if (!pages.length) {
+            return;
+        }
 
         const width = window.innerWidth;
         const x = event.clientX;
 
         if (x < width * 0.28) {
             previousPage();
-        } else if (x > width * 0.72) {
+        } else if (
+            x > width * 0.72
+        ) {
             nextPage();
         }
     };
 
     const deleteComic = async comic => {
-        if (!user || user.role !== "HOST") {
+        if (
+            !user ||
+            user.role !== "HOST"
+        ) {
             return;
         }
 
-        const confirmed = window.confirm(
-            `Delete "${comic.title}"? This cannot be undone.`
-        );
-
-        if (!confirmed) return;
-
-        try {
-            const response = await fetch(
-                `${API_BASE_URL}/api/comics/${comic.id}`,
-                {
-                    method: "DELETE",
-                    credentials: "include"
-                }
+        const confirmed =
+            window.confirm(
+                `Delete "${comic.title}"? This cannot be undone.`
             );
 
-            const data = await response.json();
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            const response =
+                await fetch(
+                    `${API_BASE_URL}/api/comics/${comic.id}`,
+                    {
+                        method: "DELETE",
+                        credentials:
+                            "include"
+                    }
+                );
+
+            const data =
+                await response.json();
 
             if (!response.ok) {
                 throw new Error(
-                    data.message || "Delete failed"
+                    data.message ||
+                        "Delete failed"
                 );
             }
 
             setComics(prev =>
-                prev.filter(item => item.id !== comic.id)
+                prev.filter(
+                    item =>
+                        item.id !==
+                        comic.id
+                )
             );
 
-            if (selectedComic?.id === comic.id) {
+            if (
+                selectedComic?.id ===
+                comic.id
+            ) {
                 closeReader();
             }
         } catch (err) {
-            alert(err.message);
+            alert(
+                err.message ||
+                    "Unable to delete comic."
+            );
         }
     };
 
     if (selectedComic) {
+        const currentImageUrl =
+            pages[currentPage]
+                ? getImageUrl(
+                      pages[currentPage]
+                          .imageUrl
+                  )
+                : "";
+
         return (
             <div
                 ref={readerRef}
@@ -270,20 +551,33 @@ export default function ComicReader({
                 <div className="reader-topbar">
                     <button
                         className="reader-back"
-                        onClick={closeReader}
+                        onClick={
+                            closeReader
+                        }
                     >
                         ←
-                        <span>Library</span>
+                        <span>
+                            Library
+                        </span>
                     </button>
 
                     <div className="reader-center-title">
-                        <small>NOW READING</small>
-                        <strong>{selectedComic.title}</strong>
+                        <small>
+                            NOW READING
+                        </small>
+
+                        <strong>
+                            {
+                                selectedComic.title
+                            }
+                        </strong>
                     </div>
 
                     <button
                         className="fullscreen-button"
-                        onClick={toggleFullscreen}
+                        onClick={
+                            toggleFullscreen
+                        }
                     >
                         {isFullscreen
                             ? "EXIT"
@@ -293,7 +587,9 @@ export default function ComicReader({
 
                 <div
                     className="reader-stage"
-                    onClick={handleReaderClick}
+                    onClick={
+                        handleReaderClick
+                    }
                 >
                     <div className="reader-glow"></div>
 
@@ -303,7 +599,10 @@ export default function ComicReader({
                             event.stopPropagation();
                             previousPage();
                         }}
-                        disabled={currentPage === 0}
+                        disabled={
+                            currentPage ===
+                            0
+                        }
                     >
                         ‹
                     </button>
@@ -311,29 +610,74 @@ export default function ComicReader({
                     {loadingPages ? (
                         <div className="reader-loading">
                             <div className="loading-ring"></div>
-                            <span>Opening comic...</span>
+
+                            <span>
+                                Opening comic...
+                            </span>
                         </div>
-                    ) : pages.length === 0 ? (
+                    ) : pages.length ===
+                      0 ? (
                         <div className="reader-loading">
-                            <span>No pages found.</span>
+                            <span>
+                                No pages found.
+                            </span>
                         </div>
                     ) : (
                         <>
                             <div className="comic-page-frame">
+                                {loadingImage && (
+                                    <div className="reader-image-loading">
+                                        <div className="loading-ring"></div>
+
+                                        <span>
+                                            Loading page{" "}
+                                            {currentPage +
+                                                1}
+                                            ...
+                                        </span>
+                                    </div>
+                                )}
+
                                 <img
-                                    src={getImageUrl(
-                                        pages[currentPage]
-                                            ?.imageUrl
-                                    )}
+                                    key={
+                                        currentImageUrl
+                                    }
+                                    src={
+                                        currentImageUrl
+                                    }
                                     alt={`Page ${
-                                        currentPage + 1
+                                        currentPage +
+                                        1
                                     }`}
-                                    className="reader-page"
+                                    className={`reader-page ${
+                                        loadingImage
+                                            ? "page-loading"
+                                            : "page-loaded"
+                                    }`}
+                                    loading="eager"
+                                    decoding="async"
+                                    fetchPriority="high"
+                                    onLoad={() => {
+                                        setLoadingImage(
+                                            false
+                                        );
+                                    }}
+                                    onError={() => {
+                                        setLoadingImage(
+                                            false
+                                        );
+                                        setError(
+                                            "Unable to load this comic page."
+                                        );
+                                    }}
                                 />
                             </div>
 
                             <div className="reader-page-number">
-                                {String(currentPage + 1).padStart(
+                                {String(
+                                    currentPage +
+                                        1
+                                ).padStart(
                                     2,
                                     "0"
                                 )}
@@ -348,24 +692,38 @@ export default function ComicReader({
                             nextPage();
                         }}
                         disabled={
-                            pages.length === 0 ||
-                            currentPage === pages.length - 1
+                            pages.length ===
+                                0 ||
+                            currentPage ===
+                                pages.length -
+                                    1
                         }
                     >
                         ›
                     </button>
 
                     <div className="reader-hint">
-                        <span>←</span>
+                        <span>
+                            ←
+                        </span>
+
                         CLICK TO TURN
-                        <span>→</span>
+
+                        <span>
+                            →
+                        </span>
                     </div>
                 </div>
 
                 <div className="reader-bottom">
                     <button
-                        onClick={previousPage}
-                        disabled={currentPage === 0}
+                        onClick={
+                            previousPage
+                        }
+                        disabled={
+                            currentPage ===
+                            0
+                        }
                     >
                         ← PREVIOUS
                     </button>
@@ -374,12 +732,15 @@ export default function ComicReader({
                         <div className="progress-text">
                             <strong>
                                 {pages.length
-                                    ? currentPage + 1
+                                    ? currentPage +
+                                      1
                                     : 0}
                             </strong>
+
                             <span>
                                 /
-                                {pages.length || 0}
+                                {pages.length ||
+                                    0}
                             </span>
                         </div>
 
@@ -389,7 +750,8 @@ export default function ComicReader({
                                 style={{
                                     width: `${
                                         pages.length
-                                            ? ((currentPage + 1) /
+                                            ? ((currentPage +
+                                                  1) /
                                                   pages.length) *
                                               100
                                             : 0
@@ -400,10 +762,15 @@ export default function ComicReader({
                     </div>
 
                     <button
-                        onClick={nextPage}
+                        onClick={
+                            nextPage
+                        }
                         disabled={
-                            pages.length === 0 ||
-                            currentPage === pages.length - 1
+                            pages.length ===
+                                0 ||
+                            currentPage ===
+                                pages.length -
+                                    1
                         }
                     >
                         NEXT →
@@ -420,8 +787,13 @@ export default function ComicReader({
                     className="brand"
                     onClick={onBack}
                 >
-                    <span>CITY</span>
-                    <strong>OF COMICS</strong>
+                    <span>
+                        CITY
+                    </span>
+
+                    <strong>
+                        OF COMICS
+                    </strong>
                 </button>
 
                 <div className="header-actions">
@@ -434,22 +806,29 @@ export default function ComicReader({
 
                     {user ? (
                         <>
-                            {user.role === "HOST" && (
+                            {user.role ===
+                                "HOST" && (
                                 <button
                                     className="header-special"
-                                    onClick={onUpload}
+                                    onClick={
+                                        onUpload
+                                    }
                                 >
                                     + UPLOAD COMIC
                                 </button>
                             )}
 
                             <span className="user-email">
-                                {user.email}
+                                {
+                                    user.email
+                                }
                             </span>
 
                             <button
                                 className="header-link"
-                                onClick={onSignOut}
+                                onClick={
+                                    onSignOut
+                                }
                             >
                                 SIGN OUT
                             </button>
@@ -457,7 +836,9 @@ export default function ComicReader({
                     ) : (
                         <button
                             className="header-special"
-                            onClick={onSignIn}
+                            onClick={
+                                onSignIn
+                            }
                         >
                             SIGN IN
                         </button>
@@ -479,15 +860,19 @@ export default function ComicReader({
                         <h1>
                             READ
                             <br />
-                            <em>ANOTHER</em>
+                            <em>
+                                ANOTHER
+                            </em>
                             <br />
                             WORLD.
                         </h1>
 
                         <p>
-                            Stories drawn in ink.
+                            Stories drawn
+                            in ink.
                             <br />
-                            Worlds waiting to be discovered.
+                            Worlds waiting
+                            to be discovered.
                         </p>
 
                         <div className="hero-line"></div>
@@ -510,20 +895,28 @@ export default function ComicReader({
                             </h2>
 
                             <p className="collection-subtitle">
-                                Choose a story and start reading.
+                                Choose a
+                                story and
+                                start
+                                reading.
                             </p>
                         </div>
 
                         <div className="search-box">
-                            <span>⌕</span>
+                            <span>
+                                ⌕
+                            </span>
 
                             <input
                                 type="text"
                                 placeholder="Search title or author"
-                                value={search}
+                                value={
+                                    search
+                                }
                                 onChange={e =>
                                     setSearch(
-                                        e.target.value
+                                        e.target
+                                            .value
                                     )
                                 }
                             />
@@ -533,32 +926,50 @@ export default function ComicReader({
                     {loading ? (
                         <div className="empty-state">
                             <div className="loading-ring"></div>
-                            <span>Loading collection...</span>
+
+                            <span>
+                                Loading
+                                collection...
+                            </span>
                         </div>
                     ) : error ? (
                         <div className="empty-state error">
-                            {error}
+                            {
+                                error
+                            }
                         </div>
-                    ) : filteredComics.length === 0 ? (
+                    ) : filteredComics.length ===
+                      0 ? (
                         <div className="empty-state">
                             <div className="empty-icon">
                                 ◇
                             </div>
+
                             <h3>
-                                No comics found
+                                No comics
+                                found
                             </h3>
+
                             <p>
-                                Your next adventure hasn't
-                                arrived yet.
+                                Your next
+                                adventure
+                                hasn't
+                                arrived
+                                yet.
                             </p>
                         </div>
                     ) : (
                         <div className="comic-grid">
                             {filteredComics.map(
-                                (comic, index) => (
+                                (
+                                    comic,
+                                    index
+                                ) => (
                                     <article
                                         className="comic-card"
-                                        key={comic.id}
+                                        key={
+                                            comic.id
+                                        }
                                     >
                                         <div
                                             className="cover-wrapper"
@@ -570,7 +981,8 @@ export default function ComicReader({
                                         >
                                             <div className="card-number">
                                                 {String(
-                                                    index + 1
+                                                    index +
+                                                        1
                                                 ).padStart(
                                                     2,
                                                     "0"
@@ -586,12 +998,15 @@ export default function ComicReader({
                                                         comic.title
                                                     }
                                                     className="comic-cover"
+                                                    loading="lazy"
+                                                    decoding="async"
                                                 />
                                             ) : (
                                                 <div className="cover-placeholder">
                                                     <span>
                                                         CITY
                                                     </span>
+
                                                     <strong>
                                                         OF COMICS
                                                     </strong>
@@ -644,6 +1059,7 @@ export default function ComicReader({
                                                 </button>
 
                                                 <button
+                                                    className="delete-button"
                                                     onClick={() =>
                                                         deleteComic(
                                                             comic

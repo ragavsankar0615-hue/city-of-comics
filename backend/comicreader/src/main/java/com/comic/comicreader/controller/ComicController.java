@@ -14,9 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.comic.comicreader.model.Comic;
 import com.comic.comicreader.model.ComicPage;
@@ -32,6 +30,7 @@ public class ComicController {
 
     private static final long MAX_COVER_SIZE = 10L * 1024 * 1024;
     private static final long MAX_PAGE_SIZE = 20L * 1024 * 1024;
+    private static final int MAX_PANELS = 200;
 
     private final ComicRepository comicRepository;
     private final ComicPageRepository comicPageRepository;
@@ -41,7 +40,6 @@ public class ComicController {
             ComicRepository comicRepository,
             ComicPageRepository comicPageRepository,
             ComicFileService comicFileService) {
-
         this.comicRepository = comicRepository;
         this.comicPageRepository = comicPageRepository;
         this.comicFileService = comicFileService;
@@ -60,115 +58,167 @@ public class ComicController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getComic(@PathVariable Long id) {
         Comic comic = comicRepository.findById(id).orElse(null);
-
         if (comic == null) {
             return ResponseEntity.notFound().build();
         }
-
         return ResponseEntity.ok(comic);
     }
 
-    @PostMapping("/upload")
-    public ResponseEntity<?> uploadComic(
-            @RequestParam String title,
-            @RequestParam String author,
-            @RequestParam(required = false, defaultValue = "") String description,
-            @RequestParam(required = false) MultipartFile cover,
-            @RequestParam("panels") MultipartFile[] panels,
+    @PostMapping("/upload/init")
+    public ResponseEntity<?> initializeUpload(
+            @RequestBody UploadInitRequest request,
             HttpSession session) {
 
         if (!isHost(session)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
-                    Map.of("message", "Only HOST can upload comics."));
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", "Only HOST can upload comics."));
         }
 
-        String cleanTitle = title == null ? "" : title.trim();
-        String cleanAuthor = author == null ? "" : author.trim();
+        String title = request.title() == null ? "" : request.title().trim();
+        String author = request.author() == null ? "" : request.author().trim();
+        String description = request.description() == null ? "" : request.description().trim();
 
-        if (cleanTitle.isBlank()) {
-            return ResponseEntity.badRequest().body(
-                    Map.of("message", "Comic title is required."));
+        if (title.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Comic title is required."));
+        }
+        if (author.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Author is required."));
+        }
+        if (request.panels() == null || request.panels().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "At least one comic panel is required."));
+        }
+        if (request.panels().size() > MAX_PANELS) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Maximum 200 panels are allowed."));
         }
 
-        if (cleanAuthor.isBlank()) {
-            return ResponseEntity.badRequest().body(
-                    Map.of("message", "Author is required."));
+        if (request.cover() != null && request.cover().size() > MAX_COVER_SIZE) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Cover image must be 10 MB or smaller."));
         }
 
-        if (panels == null || panels.length == 0) {
-            return ResponseEntity.badRequest().body(
-                    Map.of("message", "At least one comic panel is required."));
-        }
-
-        if (cover != null && !cover.isEmpty() && cover.getSize() > MAX_COVER_SIZE) {
-            return ResponseEntity.badRequest().body(
-                    Map.of("message", "Cover image must be 10 MB or smaller."));
-        }
-
-        for (MultipartFile panel : panels) {
-            if (panel == null || panel.isEmpty()) {
-                return ResponseEntity.badRequest().body(
-                        Map.of("message", "Comic panels cannot be empty."));
+        for (FileInfo panel : request.panels()) {
+            if (panel == null || panel.size() <= 0) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Comic panels cannot be empty."));
             }
-            if (panel.getSize() > MAX_PAGE_SIZE) {
-                return ResponseEntity.badRequest().body(
-                        Map.of("message", "Each comic panel must be 20 MB or smaller."));
+            if (panel.size() > MAX_PAGE_SIZE) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Each comic panel must be 20 MB or smaller."));
             }
+            if (!isImage(panel.contentType())) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Only image files are allowed."));
+            }
+        }
+
+        if (request.cover() != null && request.cover().size() > 0
+                && !isImage(request.cover().contentType())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Cover must be an image."));
         }
 
         Comic comic = new Comic();
-        comic.setTitle(cleanTitle);
-        comic.setAuthor(cleanAuthor);
-        comic.setDescription(description == null ? "" : description.trim());
-        comic.setTotalPages(panels.length);
-
-        List<String> savedFiles = new ArrayList<>();
+        comic.setTitle(title);
+        comic.setAuthor(author);
+        comic.setDescription(description);
+        comic.setTotalPages(request.panels().size());
 
         try {
             comic = comicRepository.save(comic);
-            Long comicId = comic.getId();
 
-            if (cover != null && !cover.isEmpty()) {
-                String coverUrl = comicFileService.saveImage(
-                        comicId, cover, "cover");
-                comic.setImageUrl(coverUrl);
-                savedFiles.add(coverUrl);
+            Object cover = null;
+            if (request.cover() != null && request.cover().size() > 0) {
+                cover = comicFileService.createSignedUpload(
+                        comic.getId(),
+                        request.cover().name(),
+                        request.cover().contentType());
             }
 
-            for (int i = 0; i < panels.length; i++) {
-                String pageUrl = comicFileService.saveImage(
-                        comicId, panels[i], "page-" + (i + 1));
+            List<Object> panels = new ArrayList<>();
+            for (FileInfo panel : request.panels()) {
+                panels.add(comicFileService.createSignedUpload(
+                        comic.getId(),
+                        panel.name(),
+                        panel.contentType()));
+            }
+
+            return ResponseEntity.ok(new UploadInitResponse(
+                    comic.getId(),
+                    cover,
+                    panels));
+
+        } catch (Exception e) {
+            cleanupComic(comic.getId());
+            String message = e.getMessage();
+            if (message == null || message.isBlank()) {
+                message = "Unable to initialize comic upload.";
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", message));
+        }
+    }
+
+    @PostMapping("/{id}/upload-complete")
+    public ResponseEntity<?> completeUpload(
+            @PathVariable Long id,
+            @RequestBody UploadCompleteRequest request,
+            HttpSession session) {
+
+        if (!isHost(session)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", "Only HOST can upload comics."));
+        }
+
+        Comic comic = comicRepository.findById(id).orElse(null);
+        if (comic == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", "Comic not found."));
+        }
+
+        if (request.panels() == null || request.panels().isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "No uploaded panels were provided."));
+        }
+
+        List<String> paths = new ArrayList<>();
+        try {
+            if (request.coverPath() != null && !request.coverPath().isBlank()) {
+                if (!comicFileService.isOwnedPath(id, request.coverPath())) {
+                    throw new IOException("Invalid cover storage path.");
+                }
+                comic.setImageUrl(comicFileService.publicUrl(request.coverPath()));
+                paths.add(request.coverPath());
+            }
+
+            comicPageRepository.deleteByComicId(id);
+
+            int pageNumber = 1;
+            for (String path : request.panels()) {
+                if (!comicFileService.isOwnedPath(id, path)) {
+                    throw new IOException("Invalid comic panel storage path.");
+                }
 
                 ComicPage page = new ComicPage();
                 page.setComic(comic);
-                page.setPageNumber(i + 1);
-                page.setImageUrl(pageUrl);
+                page.setPageNumber(pageNumber++);
+                page.setImageUrl(comicFileService.publicUrl(path));
                 comicPageRepository.save(page);
-                savedFiles.add(pageUrl);
+                paths.add(path);
             }
 
-            Comic savedComic = comicRepository.save(comic);
+            comic.setTotalPages(request.panels().size());
+            Comic saved = comicRepository.save(comic);
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedComic);
+            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
 
         } catch (Exception e) {
-            if (comic.getId() != null) {
-                try {
-                    comicPageRepository.deleteByComicId(comic.getId());
-                    comicRepository.deleteById(comic.getId());
-                    comicFileService.deleteComicFolder(comic.getId());
-                } catch (Exception cleanupException) {
-                    cleanupException.printStackTrace();
-                }
+            try {
+                comicPageRepository.deleteByComicId(id);
+                comicRepository.deleteById(id);
+            } catch (Exception ignored) {
             }
 
             String message = e.getMessage();
             if (message == null || message.isBlank()) {
-                message = "Unable to upload comic.";
+                message = "Unable to complete comic upload.";
             }
-
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    Map.of("message", message));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", message));
         }
     }
 
@@ -179,29 +229,25 @@ public class ComicController {
             HttpSession session) {
 
         if (!isHost(session)) {
-            return ResponseEntity.status(403).body(
-                    Map.of("message", "Only HOST can edit comics."));
+            return ResponseEntity.status(403)
+                    .body(Map.of("message", "Only HOST can edit comics."));
         }
 
         Comic comic = comicRepository.findById(id).orElse(null);
-
         if (comic == null) {
-            return ResponseEntity.status(404).body(
-                    Map.of("message", "Comic not found."));
+            return ResponseEntity.status(404)
+                    .body(Map.of("message", "Comic not found."));
         }
 
         if (details.getTitle() != null && !details.getTitle().trim().isEmpty()) {
             comic.setTitle(details.getTitle().trim());
         }
-
         if (details.getAuthor() != null && !details.getAuthor().trim().isEmpty()) {
             comic.setAuthor(details.getAuthor().trim());
         }
-
         comic.setDescription(details.getDescription());
 
-        Comic updated = comicRepository.save(comic);
-        return ResponseEntity.ok(updated);
+        return ResponseEntity.ok(comicRepository.save(comic));
     }
 
     @DeleteMapping("/{id}")
@@ -210,26 +256,83 @@ public class ComicController {
             HttpSession session) {
 
         if (!isHost(session)) {
-            return ResponseEntity.status(403).body(
-                    Map.of("message", "Only HOST can delete comics."));
+            return ResponseEntity.status(403)
+                    .body(Map.of("message", "Only HOST can delete comics."));
         }
 
         Comic comic = comicRepository.findById(id).orElse(null);
-
         if (comic == null) {
             return ResponseEntity.notFound().build();
         }
 
         try {
+            List<String> paths = new ArrayList<>();
+            comicPageRepository.findByComicIdOrderByPageNumberAsc(id)
+                    .forEach(page -> {
+                        String url = page.getImageUrl();
+                        String prefix = "/storage/v1/object/public/";
+                        int index = url == null ? -1 : url.indexOf(prefix);
+                        if (index >= 0) {
+                            String path = url.substring(index + prefix.length());
+                            int slash = path.indexOf('/');
+                            if (slash >= 0) {
+                                paths.add(path.substring(slash + 1));
+                            }
+                        }
+                    });
+
+            if (comic.getImageUrl() != null) {
+                String prefix = "/storage/v1/object/public/";
+                int index = comic.getImageUrl().indexOf(prefix);
+                if (index >= 0) {
+                    String path = comic.getImageUrl().substring(index + prefix.length());
+                    int slash = path.indexOf('/');
+                    if (slash >= 0) {
+                        paths.add(path.substring(slash + 1));
+                    }
+                }
+            }
+
             comicPageRepository.deleteByComicId(id);
             comicRepository.delete(comic);
-            comicFileService.deleteComicFolder(id);
+            return ResponseEntity.ok(Map.of("message", "Comic deleted successfully."));
 
-            return ResponseEntity.ok(
-                    Map.of("message", "Comic deleted successfully."));
-        } catch (IOException e) {
-            return ResponseEntity.status(500).body(
-                    Map.of("message", "Comic was deleted, but its files could not be removed."));
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(Map.of("message", "Comic was deleted, but its files could not be removed."));
         }
     }
+
+    private void cleanupComic(Long id) {
+        if (id == null) {
+            return;
+        }
+        try {
+            comicPageRepository.deleteByComicId(id);
+            comicRepository.deleteById(id);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private boolean isImage(String contentType) {
+        return contentType != null && contentType.toLowerCase().startsWith("image/");
+    }
+
+    public record FileInfo(String name, String contentType, long size) {}
+
+    public record UploadInitRequest(
+            String title,
+            String author,
+            String description,
+            FileInfo cover,
+            List<FileInfo> panels) {}
+
+    public record UploadInitResponse(
+            Long comicId,
+            Object cover,
+            List<Object> panels) {}
+
+    public record UploadCompleteRequest(
+            String coverPath,
+            List<String> panels) {}
 }
