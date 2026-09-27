@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -347,9 +348,6 @@ public class ComicController {
                     );
         }
 
-        List<String> paths =
-                new ArrayList<>();
-
         try {
 
             if (request.coverPath() != null
@@ -368,10 +366,6 @@ public class ComicController {
                         comicFileService.publicUrl(
                                 request.coverPath()
                         )
-                );
-
-                paths.add(
-                        request.coverPath()
                 );
             }
 
@@ -409,8 +403,6 @@ public class ComicController {
 
                 comicPageRepository
                         .save(page);
-
-                paths.add(path);
             }
 
             comic.setTotalPages(
@@ -469,7 +461,7 @@ public class ComicController {
         if (!isHost(session)) {
 
             return ResponseEntity
-                    .status(403)
+                    .status(HttpStatus.FORBIDDEN)
                     .body(
                             Map.of(
                                     "message",
@@ -485,7 +477,7 @@ public class ComicController {
         if (comic == null) {
 
             return ResponseEntity
-                    .status(404)
+                    .status(HttpStatus.NOT_FOUND)
                     .body(
                             Map.of(
                                     "message",
@@ -523,6 +515,7 @@ public class ComicController {
         );
     }
 
+    @Transactional
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteComic(
             @PathVariable Long id,
@@ -640,8 +633,8 @@ public class ComicController {
 
                         if (!objectPath.isBlank()
                                 && comicFileService.isOwnedPath(
-                                        id,
-                                        objectPath)) {
+                                id,
+                                objectPath)) {
 
                             paths.add(objectPath);
                         }
