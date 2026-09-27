@@ -1,191 +1,148 @@
 package com.comic.comicreader.controller;
 
-import java.time.Instant;
-import java.util.Map;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.comic.comicreader.dto.LoginRequest;
 import com.comic.comicreader.dto.RegisterRequest;
-import com.comic.comicreader.model.User;
 import com.comic.comicreader.service.AuthService;
-import com.comic.comicreader.service.EmailVerificationService;
 
 import jakarta.servlet.http.HttpSession;
-import jakarta.validation.Valid;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthService authService;
-    private final EmailVerificationService emailVerificationService;
 
-    public AuthController(
-            AuthService authService,
-            EmailVerificationService emailVerificationService) {
-
+    public AuthController(AuthService authService) {
         this.authService = authService;
-        this.emailVerificationService =
-                emailVerificationService;
     }
 
     @PostMapping("/register")
     public ResponseEntity<?> register(
-            @Valid @RequestBody RegisterRequest request) {
+            @RequestBody RegisterRequest request) {
 
         try {
+            Object result = authService.register(request);
 
-            Instant expiresAt =
-                    emailVerificationService
-                            .sendRegistrationOtp(
-                                    request.getEmail(),
-                                    request.getPassword()
-                            );
+            return ResponseEntity.ok(result);
 
-            return ResponseEntity.ok(
-                    Map.of(
+        } catch (Exception e) {
+
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
                             "message",
-                            "OTP sent successfully.",
-                            "expiresAt",
-                            expiresAt
-                    )
-            );
-
-        } catch (RuntimeException e) {
-
-            return ResponseEntity
-                    .badRequest()
-                    .body(
-                            Map.of(
-                                    "message",
-                                    safeMessage(e, "Unable to process request.")
-                            )
-                    );
+                            e.getMessage() != null
+                                    ? e.getMessage()
+                                    : "Registration failed"
+                    ));
         }
-    }
-
-    @PostMapping("/register/verify-otp")
-    public ResponseEntity<?> verifyRegistrationOtp(
-            @RequestBody Map<String, String> request) {
-
-        try {
-
-            String email =
-                    request.get("email");
-
-            String otp =
-                    request.get("otp");
-
-            if (email == null
-                    || email.isBlank()
-                    || otp == null
-                    || !otp.matches("\\d{6}")) {
-
-                return ResponseEntity
-                        .badRequest()
-                        .body(
-                                Map.of(
-                                        "message",
-                                        "Enter a valid 6-digit OTP."
-                                )
-                        );
-            }
-
-            User user =
-                    emailVerificationService
-                            .verifyRegistrationOtp(
-                                    email,
-                                    otp
-                            );
-
-            return ResponseEntity
-                    .status(HttpStatus.CREATED)
-                    .body(
-                            Map.of(
-                                    "message",
-                                    "Registration successful.",
-                                    "userId",
-                                    user.getId(),
-                                    "email",
-                                    user.getEmail()
-                            )
-                    );
-
-        } catch (RuntimeException e) {
-
-            return ResponseEntity
-                    .badRequest()
-                    .body(
-                            Map.of(
-                                    "message",
-                                    safeMessage(e, "Unable to process request.")
-                            )
-                    );
-        }
-    }
-
-    private String safeMessage(RuntimeException e, String fallback) {
-        return e.getMessage() == null || e.getMessage().isBlank()
-                ? fallback
-                : e.getMessage();
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(
-            @Valid @RequestBody LoginRequest request,
+            @RequestBody LoginRequest request,
             HttpSession session) {
 
         try {
 
-            User user =
-                    authService.login(request);
+            var user = authService.login(request);
 
-            session.setAttribute(
+            session.setAttribute("userId", user.getId());
+            session.setAttribute("email", user.getEmail());
+            session.setAttribute("role", user.getRole());
+
+            session.setMaxInactiveInterval(60 * 60 * 24);
+
+            session.setAttribute("authenticated", true);
+
+            Map<String, Object> response =
+                    new HashMap<>();
+
+            response.put(
+                    "message",
+                    "Login successful"
+            );
+
+            response.put(
                     "userId",
                     user.getId()
             );
 
-            session.setAttribute(
+            response.put(
                     "email",
                     user.getEmail()
             );
 
-            session.setAttribute(
+            response.put(
                     "role",
                     user.getRole()
             );
 
-            return ResponseEntity.ok(
-                    Map.of(
-                            "message",
-                            "Login successful",
-                            "userId",
-                            user.getId(),
-                            "email",
-                            user.getEmail(),
-                            "role",
-                            user.getRole()
-                    )
-            );
+            return ResponseEntity.ok(response);
 
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
+
+            return ResponseEntity.status(401)
+                    .body(Map.of(
+                            "message",
+                            e.getMessage() != null
+                                    ? e.getMessage()
+                                    : "Invalid email or password"
+                    ));
+        }
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> me(
+            HttpSession session) {
+
+        Object userId =
+                session.getAttribute("userId");
+
+        Object email =
+                session.getAttribute("email");
+
+        Object role =
+                session.getAttribute("role");
+
+        if (userId == null ||
+                email == null ||
+                role == null) {
 
             return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
+                    .status(401)
                     .body(
                             Map.of(
                                     "message",
-                                    safeMessage(e, "Unable to process request.")
+                                    "Not logged in"
                             )
                     );
         }
+
+        Map<String, Object> response =
+                new HashMap<>();
+
+        response.put(
+                "userId",
+                userId
+        );
+
+        response.put(
+                "email",
+                email
+        );
+
+        response.put(
+                "role",
+                role
+        );
+
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/logout")
@@ -198,37 +155,6 @@ public class AuthController {
                 Map.of(
                         "message",
                         "Logged out successfully"
-                )
-        );
-    }
-
-    @GetMapping("/me")
-    public ResponseEntity<?> currentUser(
-            HttpSession session) {
-
-        Object userId =
-                session.getAttribute("userId");
-
-        if (userId == null) {
-
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .body(
-                            Map.of(
-                                    "message",
-                                    "Not logged in"
-                            )
-                    );
-        }
-
-        return ResponseEntity.ok(
-                Map.of(
-                        "userId",
-                        userId,
-                        "email",
-                        session.getAttribute("email"),
-                        "role",
-                        session.getAttribute("role")
                 )
         );
     }
